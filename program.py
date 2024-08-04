@@ -20,7 +20,7 @@ class Program:
                     elif self.grid[x][y] == 'P':
                         self.update_percepts(x, y, directions, 'B')
                     elif self.grid[x][y] == 'P_G':
-                        self.update_percepts(x, y, directions, 'W')
+                        self.update_percepts(x, y, directions, 'W_H')
                     elif self.grid[x][y] == 'H_P':
                         self.update_percepts(x, y, directions, 'G_L')
                 else:
