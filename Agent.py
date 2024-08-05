@@ -1,4 +1,5 @@
 from KnowledgeBase import *
+from State import StateIndex
 # W - ma, P: pit, G: gold, P_G: -25%, H_P: +25%, S: thúi, B: lạnh, 
 # W_H: tỏa ra từ hơi độc, G_L: tỏa ra từ +25%
 nextidx = [(0, 1), (0, -1), (-1, 0), (1, 0)]
@@ -15,108 +16,108 @@ def get_adj_cell(x, y):
 class Agent:
     def __init__(self, interface):
         self.interface = interface
-        self.current_position = (1, 1)
+        self.current_position = (10, 1) # Start position is 1,1
+        self.current_percept = []
         self.current_hp = 100
         self.heal_potions = 0
         self.is_alive = True
+        self.point = 0
         self.KB = WumpusKB()
         self.interface.set_agent_cell(self.current_position)
-        self.current_percept = []
-        self.point = 0
 
     def perceive_current_cell(self):
-        percept_types = self.interface.get_percepts()  # Example: {'P', '~W', '~S',...}
-        self.current_percept = percept_types
+        self.current_percept = self.interface.get_percepts()  # Example: {'P', '~W', '~S',...}
         x, y = self.current_position
 
-        for percept in percept_types:
-            is_not = False
+        for percept in self.current_percept:
             if percept.startswith('~'):
-                is_not = True
-                percept = percept[1:]
-
-            percept_symbol = symbols(f'{percept}{x}{y}')
-
-            # Convert percept to its logical representation if it is negative (e.g., '~W' for no Wumpus)
-            if is_not:
+                percept_symbol = symbols(f'{percept[1:]}{x}{y}')
                 percept_symbol = Not(percept_symbol)
+            else:
+                percept_symbol = symbols(f'{percept}{x}{y}')
+                if percept == 'S':
+                    neighbors = get_adj_cell(x, y)
+                    neighbor_literals = [symbols(f'W{nx}{ny}') for nx, ny in neighbors]
+                    percept_symbol = Or(*neighbor_literals)  # Fix: Create OR clause for all adjacent Wumpus positions
+                
+                elif percept == 'B':
+                    neighbors = get_adj_cell(x, y)
+                    neighbor_literals = [symbols(f'P{nx}{ny}') for nx, ny in neighbors]
+                    percept_symbol = Or(*neighbor_literals)  # Fix: Pit positions
+                
+                elif percept == 'W_H':
+                    neighbors = get_adj_cell(x, y)
+                    neighbor_literals = [symbols(f'P_G{nx}{ny}') for nx, ny in neighbors]
+                    percept_symbol = Or(*neighbor_literals)  # Fix: Gas positions
 
-            elif percept == 'S':
-                neighbors = get_adj_cell(x, y)
-                neighbor_literals = [symbols(f'W{nx}{ny}') for nx, ny in neighbors]
-                percept_symbol = Or(*neighbor_literals)  # Fix: Create OR clause for all adjacent Wumpus positions
-            
-            elif percept == 'B':
-                neighbors = get_adj_cell(x, y)
-                neighbor_literals = [symbols(f'P{nx}{ny}') for nx, ny in neighbors]
-                percept_symbol = Or(*neighbor_literals)  # Fix: Create OR clause for all adjacent Pit positions
-            
-            elif percept == 'W_H':
-                neighbors = get_adj_cell(x, y)
-                neighbor_literals = [symbols(f'P_G{nx}{ny}') for nx, ny in neighbors]
-                percept_symbol = Or(*neighbor_literals)  # Fix: Create OR clause for all adjacent Gas positions
-
-            elif percept == 'G_L':
-                neighbors = get_adj_cell(x, y)
-                neighbor_literals = [symbols(f'H_P{nx}{ny}') for nx, ny in neighbors]
-                percept_symbol = Or(*neighbor_literals)  # Fix: Create OR clause for all adjacent Heal positions
+                elif percept == 'G_L':
+                    neighbors = get_adj_cell(x, y)
+                    neighbor_literals = [symbols(f'H_P{nx}{ny}') for nx, ny in neighbors]
+                    percept_symbol = Or(*neighbor_literals)  # Fix: Heal positions
 
             self.KB.add_clause(percept_symbol)  # Fix: Add clause as a list
         self.KB.print_KB()
-        return percept_types
+        return self.current_percept
     
     def top_condition(self):
+        # Initialize state array with default values
+        state = [self.current_position, '', self.point, self.current_hp, self.heal_potions]
+
         for percept in self.current_percept:
-            # if current step of agent have wumpus => game is finish, agent dies
+            # Update state based on percept
             if percept == 'W':
                 self.is_alive = False
                 self.point -= 10000
                 self.current_hp = 0
-                self.interface.log_action('{self.current_position} BE_EATEN_BY_WUMPUS {self.point} {self.current_hp} {self.heal_potions}')
+                state[StateIndex.EVENT.value] = 'BE_EATEN_BY_WUMPUS'
+                self.interface.log_state(state)
 
-            # if current step of agent have pit => game is finish, agent dies
-            if percept == 'P':
+            elif percept == 'P':
                 self.is_alive = False
                 self.point -= 10000
                 self.current_hp = 0
-                self.interface.log_action('{self.current_position} FALL_INTO_PIT {self.point} {self.current_hp} {self.heal_potions}')
+                state[StateIndex.EVENT.value] = 'FALL_INTO_PIT'
+                self.interface.log_state(state)
 
-            # if current step of agent have gold => agent grab gold
-            if percept == 'G':
+            elif percept == 'G':
                 self.point += 5000
-                self.interface.log_action('{self.current_position} GRAB_GOLD {self.point} {self.current_hp} {self.heal_potions}')
+                state[StateIndex.EVENT.value] = 'GRAB_GOLD'
+                self.interface.log_state(state)
 
-            # # if current step of agent feel Stench => agent perceives Stench
-            # if percept == 'S':
-            #     self.interface.log_action('{self.current_position} PERCEIVE_STENCH {self.point} {self.current_hp}')
-            
-            # # if current step of agent feel Breeze => agent perceives Breeze
-            # if percept == 'B':
-            #     self.interface.log_action('{self.current_position} PERCEIVE_BREEZE {self.point} {self.current_hp}')
-
-            if percept == 'H_P':
+            elif percept == 'H_P':
                 self.heal_potions += 1
                 self.point -= 10
-                self.interface.log_action('{self.current_position} GRAB_HEALING_POTION {self.point} {self.current_hp} {self.heal_potions}')
+                state[StateIndex.EVENT.value] = 'GRAB_HEALING_POTION'
+                self.interface.log_state(state)
                 if self.current_hp < 100:
                     self.current_hp += 25
                     self.heal_potions -= 1
                     self.point -= 10
-                    self.interface.log_action('{self.current_position} USE_HEALING_POTION {self.point} {self.current_hp} {self.heal_potions}')
+                    state[StateIndex.EVENT.value] = 'USE_HEALING_POTION'
+                    self.interface.log_state(state)
 
-            if percept == 'P_G':
+            elif percept == 'P_G':
                 self.current_hp -= 25
-                self.interface.log_action('{self.current_position} GO_TO_POISONOUS_GAS {self.point} {self.current_hp} {self.heal_potions}')
-                if self.heal_potions >= 1:
-                    self.current_hp += 25
-                    self.heal_potions -= 1
-                    self.point -= 10
-                    self.interface.log_action('{self.current_position} USE_HEALING_POTION {self.point} {self.current_hp} {self.heal_potions}')
-            
-            # mark this cell explored and percepts to the KB
+                if self.current_hp == 0:
+                    self.is_alive = False
+                else:
+                    if self.heal_potions >= 1:
+                        self.current_hp += 25
+                        self.heal_potions -= 1
+                        self.point -= 10
+                        state[StateIndex.EVENT.value] = 'USE_HEALING_POTION'
+                        self.interface.log_state(state)
+                state[StateIndex.EVENT.value] = 'GO_TO_POISONOUS_GAS'
+                self.interface.log_state(state)
+
+            # Mark this cell explored and percepts to the KB
             if not self.agent_cell.is_explored():
                 self.agent_cell.explore()
                 self.add_KB(self.agent_cell)
 
+            # Update the state array
+            state[StateIndex.POINT.value] = self.point
+            state[StateIndex.HP.value] = self.current_hp
+            state[StateIndex.HEAL_POTIONS.value] = self.heal_potions
 
-    
+        return state

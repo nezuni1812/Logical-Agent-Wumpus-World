@@ -1,3 +1,5 @@
+from State import State
+
 class Program:
     def __init__(self, input_file, output_file):
         self.grid_size = 0
@@ -5,7 +7,7 @@ class Program:
         self.output_file = output_file
         self.load_map(input_file)
         self.generate_percepts()
-        self.actions_log = []
+        self.states_log = []
 
     def load_map(self, input_file):
         with open(input_file, 'r') as file:
@@ -91,15 +93,20 @@ class Program:
                     formatted_row.append('-')
             print(' '.join(formatted_row))
 
-    def log_action(self, action, output_file):
-        self.actions_log.append(action)
+    def log_state(self, state, output_file):
+        state_str = (f"Position: {state[State.POSITION.value]} "
+                      f"Action: {state[State.EVENT.value]} "
+                      f"Point: {state[State.POINT.value]} "
+                      f"HP: {state[State.HP.value]} "
+                      f"Heal_Potions: {state[State.HEAL_POTIONS.value]}")
         with open(output_file, 'a') as file:
-            file.write(action + '\n')
+            file.write(state_str + '\n')
+        self.states_log.append(state)
 
     
 # Example usage
-if __name__ == "__main__":
-    program = Program('map2.txt')
-    x, y = 0, 0
-    print(program.get_cell_info(x, y))
-    program.display_grid()
+# if __name__ == "__main__":
+#     program = Program('map2.txt', 'outpu2.txt')
+#     x, y = 0, 0
+#     print(program.get_cell_info(x, y))
+#     program.display_grid()
