@@ -1,9 +1,11 @@
 class Program:
-    def __init__(self, input_file):
+    def __init__(self, input_file, output_file):
         self.grid_size = 0
         self.grid = []
+        self.output_file = output_file
         self.load_map(input_file)
         self.generate_percepts()
+        self.actions_log = []
 
     def load_map(self, input_file):
         with open(input_file, 'r') as file:
@@ -31,7 +33,7 @@ class Program:
         percept_map = {
             '1': '5',  # Wumpus -> Stench
             '2': '6',  # Pits -> Breeze
-            '3': '7',  # Pit with Gold -> Whiff
+            '3': '7',  # Poisonous Gas -> Whiff
             '4': '8'   # Healing Potion -> Glitter
         }
 
@@ -89,6 +91,12 @@ class Program:
                     formatted_row.append('-')
             print(' '.join(formatted_row))
 
+    def log_action(self, action, output_file):
+        self.actions_log.append(action)
+        with open(output_file, 'a') as file:
+            file.write(action + '\n')
+
+    
 # Example usage
 if __name__ == "__main__":
     program = Program('map2.txt')
