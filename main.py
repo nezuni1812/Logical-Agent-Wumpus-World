@@ -7,4 +7,4 @@ if __name__ == "__main__":
     interface = Interface(program)
     agent = Agent(interface)
     print(agent.current_position)
-    #print(interface.get_percepts())
+    print(agent.perceive_current_cell())

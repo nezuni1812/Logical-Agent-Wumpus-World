@@ -1,5 +1,5 @@
 class Program:
-    def __init__(self, input_file):
+    def __init__(self, input_file, output_file):
         self.grid_size = 0
         self.grid = []
         self.load_map(input_file)
@@ -62,7 +62,11 @@ class Program:
         return res
 
 
-
+    def log_action(self, action, output_file):
+        self.actions_log.append(action)
+        with open(output_file, 'a') as file:
+            file.write(action + '\n')
+            
     def display_grid(self):
         for row in self.grid:
             print('.'.join(row))

@@ -16,6 +16,10 @@ class WumpusKB:
         if clause in self.KB:
             self.KB.remove(clause)
 
+    def print_KB(self):
+        print("Current Knowledge Base:")
+        for clause in self.KB:  # Access KB set from WumpusKB class
+            print(clause)
 # # Define custom variables
 # P11, W12, P21, P12 = symbols('P11 W12 P21 P12')
 
