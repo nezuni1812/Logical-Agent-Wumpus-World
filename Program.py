@@ -1,11 +1,9 @@
 class Program:
-    def __init__(self, input_file, output_file):
+    def __init__(self, input_file):
         self.grid_size = 0
         self.grid = []
-        self.output_file = output_file
         self.load_map(input_file)
         self.generate_percepts()
-        self.actions_log = []
 
     def load_map(self, input_file):
         with open(input_file, 'r') as file:
@@ -15,39 +13,47 @@ class Program:
     def generate_percepts(self):
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
         for x in range(self.grid_size):
-            for y in range(self.grid_size):
-                if x < len(self.grid) and y < len(self.grid[x]):
-                    if self.grid[x][y] == 'W':
-                        self.update_percepts(x, y, directions, 'S')
-                    elif self.grid[x][y] == 'P':
-                        self.update_percepts(x, y, directions, 'B')
-                    elif self.grid[x][y] == 'P_G':
-                        self.update_percepts(x, y, directions, 'W_H')
-                    elif self.grid[x][y] == 'H_P':
-                        self.update_percepts(x, y, directions, 'G_L')
-                else:
-                    print(f"Skipped invalid index {x},{y}")
+            for y in range(len(self.grid[x])):
+                cell = self.grid[x][y]
+                if 'W' in cell and 'W_H' not in cell:
+                    self.update_percepts(x, y, directions, 'S')
+                if 'P' in cell and 'P_G' not in cell:
+                    self.update_percepts(x, y, directions, 'B')
+                if 'P_G' in cell:
+                    self.update_percepts(x, y, directions, 'W_H')
+                if 'H_P' in cell:
+                    self.update_percepts(x, y, directions, 'G_L')
 
     def update_percepts(self, x, y, directions, percept):
         for dx, dy in directions:
             nx, ny = x + dx, y + dy
-            if 0 <= nx < self.grid_size and 0 <= ny < self.grid_size:
+            if 0 <= nx < self.grid_size and 0 <= ny < len(self.grid[nx]):
                 if self.grid[nx][ny] == '-':
                     self.grid[nx][ny] = percept
                 elif percept not in self.grid[nx][ny]:
                     self.grid[nx][ny] += percept
-            else:
-                print(f"Out of bounds: {nx},{ny}")
 
     def get_cell_info(self, x, y):
-        if 0 <= x < self.grid_size and 0 <= y < self.grid_size:
-            return self.grid[x][y]
-        return None
+        percepts = ['~W', '~P', '~P_G', '~H_P', '~S', '~B', '~W_H', '~G_L']
+        percept_mapping = {
+            'W': 0,
+            'P': 1,
+            'P_G': 2,
+            'H_P': 3,
+            'S': 4,
+            'B': 5,
+            'W_H': 6,
+            'G_L': 7
+        }
 
-    def log_action(self, action, output_file):
-        self.actions_log.append(action)
-        with open(output_file, 'a') as file:
-            file.write(action + '\n')
+        if 0 <= x < self.grid_size and 0 <= y < len(self.grid[x]):
+            cell = self.grid[x][y]
+            if cell != '-':
+                for key in percept_mapping.keys():
+                    if key in cell:
+                        percepts[percept_mapping[key]] = key
+
+        return percepts
 
     def display_grid(self):
         for row in self.grid:
@@ -55,5 +61,9 @@ class Program:
 
 # Example usage
 if __name__ == "__main__":
-    program = Program('map1.txt', 'result1.txt')
+    program = Program('map2.txt')
     program.display_grid()
+
+    # Test get_cell_info
+    x, y = 1, 1  # Example coordinates
+    print(f"Cell info at ({x}, {y}): {program.get_cell_info(x, y)}")
