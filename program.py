@@ -1,9 +1,11 @@
 class Program:
-    def __init__(self, input_file):
+    def __init__(self, input_file, output_file):
         self.grid_size = 0
         self.grid = []
+        self.output_file = output_file
         self.load_map(input_file)
         self.generate_percepts()
+        self.actions_log = []
 
     def load_map(self, input_file):
         with open(input_file, 'r') as file:
@@ -42,11 +44,16 @@ class Program:
             return self.grid[x][y]
         return None
 
+    def log_action(self, action, output_file):
+        self.actions_log.append(action)
+        with open(output_file, 'a') as file:
+            file.write(action + '\n')
+
     def display_grid(self):
         for row in self.grid:
             print('.'.join(row))
 
 # Example usage
 if __name__ == "__main__":
-    program = Program('map2.txt')
+    program = Program('map1.txt', 'result1.txt')
     program.display_grid()
