@@ -87,7 +87,7 @@ class Program:
                     formatted_row.append(''.join(sorted(cell)))
                 else:
                     formatted_row.append('-')
-            print('.'.join(formatted_row))
+            print(' '.join(formatted_row))
 
 # Example usage
 if __name__ == "__main__":
