@@ -1,5 +1,5 @@
 from KnowledgeBase import *
-from State import StateIndex
+from State import State
 # W - ma, P: pit, G: gold, P_G: -25%, H_P: +25%, S: thúi, B: lạnh, 
 # W_H: tỏa ra từ hơi độc, G_L: tỏa ra từ +25%
 nextidx = [(0, 1), (0, -1), (-1, 0), (1, 0)]
@@ -69,31 +69,31 @@ class Agent:
                 self.is_alive = False
                 self.point -= 10000
                 self.current_hp = 0
-                state[StateIndex.EVENT.value] = 'BE_EATEN_BY_WUMPUS'
+                state[State.EVENT.value] = 'BE_EATEN_BY_WUMPUS'
                 self.interface.log_state(state)
 
             elif percept == 'P':
                 self.is_alive = False
                 self.point -= 10000
                 self.current_hp = 0
-                state[StateIndex.EVENT.value] = 'FALL_INTO_PIT'
+                state[State.EVENT.value] = 'FALL_INTO_PIT'
                 self.interface.log_state(state)
 
             elif percept == 'G':
                 self.point += 5000
-                state[StateIndex.EVENT.value] = 'GRAB_GOLD'
+                state[State.EVENT.value] = 'GRAB_GOLD'
                 self.interface.log_state(state)
 
             elif percept == 'H_P':
                 self.heal_potions += 1
                 self.point -= 10
-                state[StateIndex.EVENT.value] = 'GRAB_HEALING_POTION'
+                state[State.EVENT.value] = 'GRAB_HEALING_POTION'
                 self.interface.log_state(state)
                 if self.current_hp < 100:
                     self.current_hp += 25
                     self.heal_potions -= 1
                     self.point -= 10
-                    state[StateIndex.EVENT.value] = 'USE_HEALING_POTION'
+                    state[State.EVENT.value] = 'USE_HEALING_POTION'
                     self.interface.log_state(state)
 
             elif percept == 'P_G':
@@ -105,9 +105,9 @@ class Agent:
                         self.current_hp += 25
                         self.heal_potions -= 1
                         self.point -= 10
-                        state[StateIndex.EVENT.value] = 'USE_HEALING_POTION'
+                        state[State.EVENT.value] = 'USE_HEALING_POTION'
                         self.interface.log_state(state)
-                state[StateIndex.EVENT.value] = 'GO_TO_POISONOUS_GAS'
+                state[State.EVENT.value] = 'GO_TO_POISONOUS_GAS'
                 self.interface.log_state(state)
 
             # Mark this cell explored and percepts to the KB
@@ -116,8 +116,8 @@ class Agent:
                 self.add_KB(self.agent_cell)
 
             # Update the state array
-            state[StateIndex.POINT.value] = self.point
-            state[StateIndex.HP.value] = self.current_hp
-            state[StateIndex.HEAL_POTIONS.value] = self.heal_potions
+            state[State.POINT.value] = self.point
+            state[State.HP.value] = self.current_hp
+            state[State.HEAL_POTIONS.value] = self.heal_potions
 
         return state
