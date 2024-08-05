@@ -32,28 +32,36 @@ class Program:
                     self.grid[nx][ny] = percept
                 elif percept not in self.grid[nx][ny]:
                     self.grid[nx][ny] += percept
-
     def get_cell_info(self, x, y):
-        percepts = ['~W', '~P', '~P_G', '~H_P', '~S', '~B', '~W_H', '~G_L']
-        percept_mapping = {
-            'W': 0,
-            'P': 1,
-            'P_G': 2,
-            'H_P': 3,
-            'S': 4,
-            'B': 5,
-            'W_H': 6,
-            'G_L': 7
-        }
+        percepts = ['W', 'P', 'P_G', 'H_P', 'S', 'B', 'W_H', 'G_L']
+
+        res = ['~W', '~P', '~P_G', '~H_P', '~S', '~B', '~W_H', '~G_L']
 
         if 0 <= x < self.grid_size and 0 <= y < len(self.grid[x]):
             cell = self.grid[x][y]
-            if cell != '-':
-                for key in percept_mapping.keys():
-                    if key in cell:
-                        percepts[percept_mapping[key]] = key
 
-        return percepts
+            if 'P_G' in cell:
+                res[percepts.index('P_G')] = 'P_G'
+            elif 'P' in cell and 'P_G' not in cell:
+                res[percepts.index('P')] = 'P'
+
+            if 'H_P' in cell:
+                res[percepts.index('H_P')] = 'H_P'
+            elif 'W_H' in cell and 'H_P' not in cell:
+                res[percepts.index('W_H')] = 'W_H'
+            elif 'W' in cell and 'W_H' not in cell and 'H_P' not in cell:
+                res[percepts.index('W')] = 'W'
+
+            if 'S' in cell:
+                res[percepts.index('S')] = 'S'
+            if 'B' in cell:
+                res[percepts.index('B')] = 'B'
+            if 'G_L' in cell:
+                res[percepts.index('G_L')] = 'G_L'
+
+        return res
+
+
 
     def display_grid(self):
         for row in self.grid:
@@ -65,5 +73,6 @@ if __name__ == "__main__":
     program.display_grid()
 
     # Test get_cell_info
-    x, y = 1, 1  # Example coordinates
+    x, y = 0, 0  # Example coordinates
     print(f"Cell info at ({x}, {y}): {program.get_cell_info(x, y)}")
+    print(program.grid[0][0])
