@@ -99,13 +99,13 @@ class Program:
                     formatted_row.append('-')
             print(' '.join(formatted_row))
 
-    def log_state(self, state, output_file):
+    def log_state(self, state):
         state_str = (f"Position: {state[State.POSITION.value]} "
                       f"Action: {state[State.EVENT.value]} "
                       f"Point: {state[State.POINT.value]} "
                       f"HP: {state[State.HP.value]} "
                       f"Heal_Potions: {state[State.HEAL_POTIONS.value]}")
-        with open(output_file, 'a') as file:
+        with open(self.output_file, 'a') as file:
             file.write(state_str + '\n')
         self.states_log.append(state)
 

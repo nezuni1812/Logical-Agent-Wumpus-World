@@ -1,5 +1,4 @@
 from KnowledgeBase import *
-from Cell import *
 from State import State
 # W - ma, P: pit, G: gold, P_G: -25%, H_P: +25%, S: thúi, B: lạnh, 
 # W_H: tỏa ra từ hơi độc, G_L: tỏa ra từ +25%
@@ -20,7 +19,7 @@ priority_order = {
 class Agent:
     def __init__(self, interface):
         self.interface = interface
-        self.current_position = (2, 1) # Start position is 1,1
+        self.current_position = (1, 1) # Start position is 1,1
         self.last_position = None
         self.direction = "N"
         self.current_percept = []
@@ -96,7 +95,7 @@ class Agent:
         return self.current_percept
     
     def do_in_percept(self):
-        print(self.perceive_current_cell())
+        self.perceive_current_cell()
         # Initialize state array with default values
         state = [self.current_position, '', self.point, self.current_hp, self.heal_potions]
 
@@ -186,8 +185,8 @@ class Agent:
         return safe_adj_cell
     
     def backtracking_search(self):
-        print(self.current_position)
         print(self.do_in_percept())
+        print(self.current_percept)
         
         if not self.is_alive:
             return False
@@ -200,8 +199,7 @@ class Agent:
 
         for cell in safe_adj_cells:
             if cell not in self.explored_cells:  # Check if the cell has not been explored
-                self.last_position = self.current_position
-                self.current_position = cell
+                self.move_to(cell)
 
                 if self.backtracking_search():
                     return True
@@ -209,13 +207,11 @@ class Agent:
                     self.current_position = self.last_position
 
         return False
-
+    
     def move_to(self, new_position):
         self.last_position = self.current_position
         self.current_position = new_position
         self.interface.set_agent_cell(self.current_position)
-        self.perceive_current_cell()
-        self.check_percept()
 
     def get_direction(self, current, target):
         dx = target[0] - current[0]
