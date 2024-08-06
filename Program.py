@@ -17,18 +17,24 @@ class Program:
                 for y in range(len(self.grid[x])):
                     cell_content = self.grid[x][y]
                     if cell_content != '-':
-                        percept_numbers = []
-                        if 'W' in cell_content:
-                            percept_numbers.append('1')
-                        if 'P_G' in cell_content:
-                            percept_numbers.append('3')
-                        elif 'P' in cell_content:
-                            percept_numbers.append('2')
-                        if 'H_P' in cell_content:
-                            percept_numbers.append('4')
+                        objects = cell_content.split(',')
+                        percept_numbers = set()
+                        
+                        # Check and add percepts
+                        if 'W' in objects:
+                            percept_numbers.add('1')  # Wumpus
+                        if 'P_G' in objects:
+                            percept_numbers.add('3')  # Pit with Gold
+                        if 'P' in objects:
+                            percept_numbers.add('2')  # Pit
+                        if 'H_P' in objects:
+                            percept_numbers.add('4')  # Healing Potion
+                        
+                        # Combine percepts into a string
                         self.grid[x][y] = ''.join(sorted(percept_numbers))
                     else:
                         self.grid[x][y] = ''
+    
 
     def generate_percepts(self):
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
@@ -105,8 +111,8 @@ class Program:
 
     
 # Example usage
-# if __name__ == "__main__":
-#     program = Program('map2.txt', 'outpu2.txt')
-#     x, y = 0, 0
-#     print(program.get_cell_info(x, y))
-#     program.display_grid()
+if __name__ == "__main__":
+    program = Program('map1.txt', 'outpu2.txt')
+    x, y = 0, 0
+    print(program.get_cell_info(x, y))
+    program.display_grid()
