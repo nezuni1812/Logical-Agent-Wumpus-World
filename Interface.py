@@ -21,7 +21,7 @@ class Interface:
             return self.program.get_cell_info(*self.agent_cell)
         return None
 
-    def log_action(self, state):
+    def log_state(self, state):
         self.program.log_state(state)
 
     def get_grid_size(self):
