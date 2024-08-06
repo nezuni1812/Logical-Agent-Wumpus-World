@@ -1,4 +1,4 @@
-from Program import Program
+from Program import *
 
 class Interface:
     def __init__(self, program):
@@ -21,8 +21,8 @@ class Interface:
             return self.program.get_cell_info(*self.agent_cell)
         return None
 
-    def log_action(self, action):
-        self.program.log_action(action)
+    def log_action(self, state):
+        self.program.log_state(state)
 
     def get_grid_size(self):
         return self.program.grid_size
