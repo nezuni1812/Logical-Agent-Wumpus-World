@@ -16,10 +16,10 @@ class Program:
                         percept_numbers = []
                         if 'W' in cell_content:
                             percept_numbers.append('1')
-                        if 'P' in cell_content:
-                            percept_numbers.append('2')
                         if 'P_G' in cell_content:
                             percept_numbers.append('3')
+                        elif 'P' in cell_content:
+                            percept_numbers.append('2')
                         if 'H_P' in cell_content:
                             percept_numbers.append('4')
                         self.grid[x][y] = ''.join(sorted(percept_numbers))
@@ -91,7 +91,7 @@ class Program:
 
 # Example usage
 if __name__ == "__main__":
-    program = Program('map2.txt')
-    x, y = 0, 0
+    program = Program('map1.txt')
+    x, y = 1, 0
     print(program.get_cell_info(x, y))
     program.display_grid()
