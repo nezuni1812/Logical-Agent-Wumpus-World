@@ -71,11 +71,11 @@ class Agent:
                     neighbor_literals = [symbols(f'H_P{nx}{ny}') for nx, ny in neighbors]
                     percept_symbol = Or(*neighbor_literals)  # Create OR clause for all adjacent Heal positions
 
-            self.KB.add_clause([percept_symbol])  # Add clause as a list
+            self.KB.add_clause(percept_symbol)  # Add clause as a list
         self.KB.print_KB()
         return self.current_percept
     
-    def check_percept(self):
+    def do_in_percept(self):
         # Initialize state array with default values
         state = [self.current_position, '', self.point, self.current_hp, self.heal_potions]
 
@@ -129,9 +129,9 @@ class Agent:
                 self.interface.log_state(state)
 
             # Mark this cell explored and percepts to the KB
-            if not self.agent_cell.is_explored():
-                self.agent_cell.explore()
-                self.add_KB(self.agent_cell)
+            # if not self.agent_cell.is_explored():
+            #     self.agent_cell.explore()
+            #     self.add_KB(self.agent_cell)
 
             # Update the state array
             state[State.POINT.value] = self.point
@@ -141,9 +141,7 @@ class Agent:
         return state
 
     def check_safeadjcell(self):
-        most_priority = []
-        less_priority = []
-        adj_cell = self.get_adj_cell() 
+        adj_cell = self.get_adj_cell()
         safe_adj_cell = []
 
         for nx, ny in adj_cell:
@@ -151,32 +149,65 @@ class Agent:
             pit_symbol = symbols(f'P{nx}{ny}')
             gas_symbol = symbols(f'P_G{nx}{ny}')
 
-            wumpus_safe = not self.KB.infer(Not(wumpus_symbol))
-            pit_safe = not self.KB.infer(Not(pit_symbol))
-            gas_safe = not self.KB.infer(Not(gas_symbol))
+            wumpus_safe = self.KB.infer(Not(wumpus_symbol))
+            pit_safe = self.KB.infer(Not(pit_symbol))
+            gas_safe = self.KB.infer(Not(gas_symbol))
 
             # KB chỉ được cập nhật nếu chắc chắn là không có wumpus, pit, gas
-            if self.KB.infer(wumpus_symbol):
-                self.KB.add_clause(Not(wumpus_symbol))
-            if self.KB.infer(pit_symbol):
-                self.KB.add_clause(Not(pit_symbol))
-            if self.KB.infer(gas_symbol):
-                self.KB.add_clause(Not(gas_symbol))
+            if self.KB.infer(Not(wumpus_symbol)):
+                self.KB.add_clause([Not(wumpus_symbol)])
+            if self.KB.infer(Not(pit_symbol)):
+                self.KB.add_clause([Not(pit_symbol)])
+            if self.KB.infer(Not(gas_symbol)):
+                self.KB.add_clause([Not(gas_symbol)])
 
             if wumpus_safe and pit_safe and gas_safe:
-                most_priority.append((nx, ny))
-            elif gas_safe:
-                less_priority.append((nx, ny))
-
-        if most_priority:
-            safe_adj_cell = most_priority
-        elif less_priority:
-            safe_adj_cell = less_priority
-
-        if safe_adj_cell == [self.last_position]:
-            return safe_adj_cell
-
-        if self.last_position in safe_adj_cell:
-            safe_adj_cell.remove(self.last_position)
+                safe_adj_cell.append((nx, ny))
+            elif gas_safe and self.current_hp >= 75:
+                # Có thể cân nhắc di chuyển vào ô có khí độc nếu HP đủ cao
+                safe_adj_cell.append((nx, ny))
 
         return safe_adj_cell
+    
+    def backtracking_search(self):
+        print(self.current_position)
+        if not self.is_alive:
+            return False
+        
+        self.perceive_current_cell()
+        print(self.do_in_percept())
+        safe_adj_cells = self.check_safeadjcell()
+        print(safe_adj_cells)
+        if not safe_adj_cells:
+            return False
+
+        for cell in safe_adj_cells:
+            self.last_position = self.current_position
+            self.current_position = cell
+
+            if self.backtracking_search():
+                return True
+            else:
+                self.current_position = self.last_position
+
+        return False
+
+    def move_to(self, new_position):
+        self.last_position = self.current_position
+        self.current_position = new_position
+        self.interface.set_agent_cell(self.current_position)
+        self.perceive_current_cell()
+        self.check_percept()
+
+    def get_direction(self, current, target):
+        dx = target[0] - current[0]
+        dy = target[1] - current[1]
+        if dx == 1:
+            return "S"
+        elif dx == -1:
+            return "N"
+        elif dy == 1:
+            return "E"
+        elif dy == -1:
+            return "W"
+        return self.direction  # Default to current direction if no change
