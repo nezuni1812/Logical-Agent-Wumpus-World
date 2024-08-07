@@ -24,11 +24,13 @@ class Program:
                         if 'W' in objects:
                             percept_numbers.add('1')  # Wumpus
                         if 'P_G' in objects:
-                            percept_numbers.add('3')  # Pit with Gold
+                            percept_numbers.add('3')  # Poisonous Gas
                         if 'P' in objects:
                             percept_numbers.add('2')  # Pit
                         if 'H_P' in objects:
                             percept_numbers.add('4')  # Healing Potion
+                        if 'C' in objects:
+                            percept_numbers.add('9')  # Chess of gold
                         
                         # Combine percepts into a string
                         self.grid[x][y] = ''.join(sorted(percept_numbers))
@@ -76,10 +78,11 @@ class Program:
             '5': 'S',
             '6': 'B',
             '7': 'W_H',
-            '8': 'G_L'
+            '8': 'G_L',
+            '9': 'C'
         }
-        percepts = ['W', 'P', 'P_G', 'H_P', 'S', 'B', 'W_H', 'G_L']
-        result = ['~W', '~P', '~P_G', '~H_P', '~S', '~B', '~W_H', '~G_L']
+        percepts = ['W', 'P', 'P_G', 'H_P', 'S', 'B', 'W_H', 'G_L', 'C']
+        result = ['~W', '~P', '~P_G', '~H_P', '~S', '~B', '~W_H', '~G_L', '~C']
 
         if 0 <= x < self.grid_size and 0 <= y < len(self.grid[x]):
             cell = self.grid[x][y]
