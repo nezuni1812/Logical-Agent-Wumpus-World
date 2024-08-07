@@ -1,5 +1,7 @@
 from KnowledgeBase import *
 from State import *
+from collections import deque
+
 # W - ma, P: pit, G: gold, P_G: -25%, H_P: +25%, S: thúi, B: lạnh, 
 # W_H: tỏa ra từ hơi độc, G_L: tỏa ra từ +25%
 
@@ -10,6 +12,7 @@ priority_order = {
         "S": ["S", "W", "E", "N"],
         "W": ["W", "N", "S", "E"]
     }
+
 
 class Agent:
     def __init__(self, interface):
@@ -25,7 +28,8 @@ class Agent:
         self.KB = WumpusKB()
         self.interface.set_agent_cell(self.current_position)
         self.explored_cells = set()
-    
+        self.safe_explored_cells = set()
+
     def get_adj_cell(self):
         x, y = self.current_position
         adj_cell = []
@@ -37,7 +41,6 @@ class Agent:
                 adj_cell.append((row, col))
         return adj_cell
     
-
     def perceive_current_cell(self):
         self.current_percept = self.interface.get_percepts()  # Example: {'P', '~W', '~S',...}
 
@@ -301,33 +304,45 @@ class Agent:
     
     def backtracking_search(self):
         self.do_in_percept()
-        # print(self.current_percept)
-        
         if not self.is_alive:
             return False
-        
+        self.safe_explored_cells.add(self.current_position)
         self.explored_cells.add(self.current_position)  # Mark the current cell as explored
         safe_adj_cells = set()
         adj_cell = self.get_adj_cell()
         safe_adj_cells.update(self.check_pit_cell(adj_cell))
         safe_adj_cells = safe_adj_cells.intersection(self.check_gas_cell(adj_cell))
         safe_adj_cells = safe_adj_cells.intersection(self.check_wumpus_cell(adj_cell))
-        print(safe_adj_cells)
+        for cell in safe_adj_cells:
+            self.safe_explored_cells.add(cell)
+        # print(safe_adj_cells)
         if not safe_adj_cells:
             return False
-    
+        
         for cell in safe_adj_cells:
             if cell not in self.explored_cells:  # Check if the cell has not been explored
-                self.move_to(cell)
-    
+                print(self.current_position, cell)
+                if abs(cell[0] - self.current_position[0]) + abs(cell[1] - self.current_position[1]) == 1:
+                    print("A")
+                    self.move_to_adj_cell(cell)
+                else:
+                    self.safe_explored_cells.add(cell)
+                    path = self.bfs_path(self.current_position, cell)
+                    # print(path)
+                    self.move_to(cell)
+                    # if path:
+                    #     for step in path[1:]:  # Skip the first step as it's the current position
+                    #         print("B")
+                    #         self.move_to_adj_cell(step)
                 if self.backtracking_search():
                     return True
                 else:
                     self.current_position = self.last_position
-    
+        
         return False
-    
-    def move_to(self, new_position):
+
+
+    def move_to_adj_cell(self, new_position):
         self.last_position = self.current_position
         self.current_position = new_position
 
@@ -338,9 +353,7 @@ class Agent:
             if vector == (dx, dy):
                 new_direction = direction
                 break
-
         action = ''
-
         if self.direction == new_direction:
             action = 'MOVE_FORWARD'
             state = [self.last_position, self.direction, action, self.point, self.current_hp, self.heal_potions]
@@ -373,4 +386,41 @@ class Agent:
             return "E"
         elif dy == -1:
             return "W"
-        return self.direction 
+        return self.direction
+    
+    def move_to(self, new_position):
+        self.last_position = self.current_position
+        self.current_position = new_position
+        self.interface.set_agent_cell(self.current_position)
+
+    def get_adj_cell_from_position(self, position):
+        x, y = position
+        adj_cell = []
+        for direction in priority_order[self.direction]:
+            d_x, d_y = directions_vectors[direction]
+            row = x + d_x
+            col = y + d_y
+            if 1 <= row <= 4 and 1 <= col <= 4:
+                adj_cell.append((row, col))
+        return adj_cell
+    
+    def bfs_path(self, start, goal):
+        
+        # Initialize the queue with the start position and the path taken so far
+        queue = deque([(start, [start])])
+        visited = set([start])  # Keep track of visited nodes
+        
+        while queue:
+            current, path = queue.popleft()
+            
+            # Check if we've reached the goal
+            if current == goal:
+                return path
+            
+            # Expand the neighbors
+            for neighbor in self.get_adj_cell_from_position(current):
+                if neighbor in self.safe_explored_cells and neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append((neighbor, path + [neighbor]))
+        
+        return None  # Return None if no path is found
