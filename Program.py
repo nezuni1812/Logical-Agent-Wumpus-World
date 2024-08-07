@@ -116,16 +116,18 @@ class Program:
 
     def update_map_after_log_state(self, state):
         x, y = state[State.POSITION.value]
-        direct_x, direct_y = state[State.DIRECTION.value]
         cell = self.grid[x][y]
-        direct_cell = self.grid[x + direct_x][y + direct_y]
+
         if '9' in cell and state[State.EVENT.value] == 'GRAB_GOLD':
             self.grid[x][y] = ''
         elif '4' in cell and state[State.EVENT.value] == 'GRAB_HEALING_POTION':
             self.grid[x][y] = ''
-        elif '1' in direct_cell and state[State.EVENT.value] == 'SHOOT_WUMPUS':
-            self.grid[x + direct_x][y + direct_y] = self.grid[x + direct_x][y + direct_y].replace('1', '')
-            self.delete_percepts(x + direct_x, y + direct_y, '5')
+        elif state[State.EVENT.value] == 'SHOOT_WUMPUS':
+            direct_x, direct_y = state[State.DIRECTION.value]
+            direct_cell = self.grid[x + direct_x][y + direct_y]
+            if '1' in direct_cell: 
+                self.grid[x + direct_x][y + direct_y] = self.grid[x + direct_x][y + direct_y].replace('1', '')
+                self.delete_percepts(x + direct_x, y + direct_y, '5')
             
 
 # Example usage

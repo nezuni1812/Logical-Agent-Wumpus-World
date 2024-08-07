@@ -15,6 +15,3 @@ if __name__ == "__main__":
     # state = [(1,1), "N", "SHOOT_WUMPUS", 0, 100, 0]
     # agent.interface.log_state(state)
     # program.display_grid()
-    # print(agent.check_wumpus_cell())
-    # print(agent.check_gas_cell())
-    print(agent.check_pit_cell())
