@@ -1,14 +1,9 @@
 from KnowledgeBase import *
-from State import State
+from State import *
 # W - ma, P: pit, G: gold, P_G: -25%, H_P: +25%, S: thúi, B: lạnh, 
 # W_H: tỏa ra từ hơi độc, G_L: tỏa ra từ +25%
-directions = {
-    "N": (1, 0),
-    "E": (0, 1),
-    "S": (-1, 0),
-    "W": (0, -1)
-}
 
+# Get the current direction
 priority_order = {
         "N": ["N", "E", "W", "S"],
         "E": ["E", "S", "N", "W"],
@@ -97,7 +92,7 @@ class Agent:
     def do_in_percept(self):
         self.perceive_current_cell()
         # Initialize state array with default values
-        state = [self.current_position, '', self.point, self.current_hp, self.heal_potions]
+        state = [self.current_position, self.direction, '', self.point, self.current_hp, self.heal_potions]
 
         for percept in self.current_percept:
             # Update state based on percept
@@ -115,7 +110,7 @@ class Agent:
                 state[State.EVENT.value] = 'FALL_INTO_PIT'
                 self.interface.log_state(state)
 
-            elif percept == 'G':
+            elif percept == 'C':
                 self.point += 5000
                 state[State.EVENT.value] = 'GRAB_GOLD'
                 self.interface.log_state(state)

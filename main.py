@@ -9,4 +9,7 @@ if __name__ == "__main__":
     # agent.perceive_current_cell()
     # print(agent.check_safeadjcell())
     # print(agent.do_in_percept())
-    agent.backtracking_search()
+    # agent.backtracking_search()
+    state = [(1,1), "N", "SHOOT_WUMPUS", 0, 100, 0]
+    agent.interface.log_state(state)
+    program.display_grid()

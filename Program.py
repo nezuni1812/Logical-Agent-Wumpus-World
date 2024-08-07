@@ -1,4 +1,4 @@
-from State import State
+from State import *
 
 class Program:
     def __init__(self, input_file, output_file):
@@ -103,16 +103,31 @@ class Program:
             print(' '.join(formatted_row))
 
     def log_state(self, state):
-        state_str = (f"Position: {state[State.POSITION.value]} "
-                      f"Action: {state[State.EVENT.value]} "
-                      f"Point: {state[State.POINT.value]} "
-                      f"HP: {state[State.HP.value]} "
-                      f"Heal_Potions: {state[State.HEAL_POTIONS.value]}")
-        with open(self.output_file, 'a') as file:
-            file.write(state_str + '\n')
         self.states_log.append(state)
+        self.update_map_after_log_state(state)
 
-    
+    def delete_percepts(self, x, y, percepts):
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        for dx, dy in directions:
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < self.grid_size and 0 <= ny < len(self.grid[nx]):
+                if percepts in self.grid[nx][ny]:
+                    self.grid[nx][ny] = self.grid[nx][ny].replace(percepts, '')
+
+    def update_map_after_log_state(self, state):
+        x, y = state[State.POSITION.value]
+        direct_x, direct_y = state[State.DIRECTION.value]
+        cell = self.grid[x][y]
+        direct_cell = self.grid[x + direct_x][y + direct_y]
+        if '9' in cell and state[State.EVENT.value] == 'GRAB_GOLD':
+            self.grid[x][y] = ''
+        elif '4' in cell and state[State.EVENT.value] == 'GRAB_HEALING_POTION':
+            self.grid[x][y] = ''
+        elif '1' in direct_cell and state[State.EVENT.value] == 'SHOOT_WUMPUS':
+            self.grid[x + direct_x][y + direct_y] = ''
+            self.delete_percepts(x + direct_x, y + direct_y, '5')
+            
+
 # Example usage
 if __name__ == "__main__":
     program = Program('map1.txt', 'outpu2.txt')
