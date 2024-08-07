@@ -29,6 +29,7 @@ class Agent:
         self.point = 0
         self.KB = WumpusKB()
         self.interface.set_agent_cell(self.current_position)
+        self.explored_cells = set()
     
     def get_adj_cell(self):
         x, y = self.current_position
@@ -37,45 +38,64 @@ class Agent:
             d_x, d_y = directions[direction]
             row = x + d_x
             col = y + d_y
-            if 1 <= row <= 10 and 1 <= col <= 10:
+            if 1 <= row <= 4 and 1 <= col <= 4:
                 adj_cell.append((row, col))
         return adj_cell
     
+
     def perceive_current_cell(self):
         self.current_percept = self.interface.get_percepts()  # Example: {'P', '~W', '~S',...}
-        
+
         x, y = self.current_position  # Get the current position
+        neighbors = self.get_adj_cell()  # Retrieve adjacent cells only once
+
         for percept in self.current_percept:
             if percept.startswith('~'):
                 percept_symbol = symbols(f'{percept[1:]}{x}{y}')
                 percept_symbol = Not(percept_symbol)
+                self.KB.add_clause(percept_symbol)
+                
+                if percept == '~S':
+                    for nx, ny in neighbors:
+                        self.KB.add_clause(Not(symbols(f'W{nx}{ny}')))
+                
+                elif percept == '~B':
+                    for nx, ny in neighbors:
+                        self.KB.add_clause(Not(symbols(f'P{nx}{ny}')))
+                
+                elif percept == '~W_H':
+                    for nx, ny in neighbors:
+                        self.KB.add_clause(Not(symbols(f'P_G{nx}{ny}')))
+                
+                elif percept == '~G_L':
+                    for nx, ny in neighbors:
+                        self.KB.add_clause(Not(symbols(f'H_P{nx}{ny}')))
+            
             else:
                 percept_symbol = symbols(f'{percept}{x}{y}')
                 if percept == 'S':
-                    neighbors = self.get_adj_cell()
                     neighbor_literals = [symbols(f'W{nx}{ny}') for nx, ny in neighbors]
                     percept_symbol = Or(*neighbor_literals)  # Create OR clause for all adjacent Wumpus positions
-                
+
                 elif percept == 'B':
-                    neighbors = self.get_adj_cell()
                     neighbor_literals = [symbols(f'P{nx}{ny}') for nx, ny in neighbors]
-                    percept_symbol = Or(*neighbor_literals)  # Create OR clause for all adjacent Pit positions
-                
+                    percept_symbol = Or(*neighbor_literals)  # Pit positions
+
                 elif percept == 'W_H':
-                    neighbors = self.get_adj_cell()
                     neighbor_literals = [symbols(f'P_G{nx}{ny}') for nx, ny in neighbors]
-                    percept_symbol = Or(*neighbor_literals)  # Create OR clause for all adjacent Gas positions
+                    percept_symbol = Or(*neighbor_literals)  # Gas positions
 
                 elif percept == 'G_L':
-                    neighbors = self.get_adj_cell()
                     neighbor_literals = [symbols(f'H_P{nx}{ny}') for nx, ny in neighbors]
-                    percept_symbol = Or(*neighbor_literals)  # Create OR clause for all adjacent Heal positions
+                    percept_symbol = Or(*neighbor_literals)  # Heal positions
 
-            self.KB.add_clause(percept_symbol)  # Add clause as a list
-        self.KB.print_KB()
+                self.KB.add_clause(percept_symbol)  # Add clause as a list
+
+        # self.KB.print_KB()
         return self.current_percept
     
     def do_in_percept(self):
+        self.perceive_current_cell()
         # Initialize state array with default values
         state = [self.current_position, '', self.point, self.current_hp, self.heal_potions]
 
@@ -141,6 +161,7 @@ class Agent:
         return state
 
     def check_safeadjcell(self):
+        self.perceive_current_cell()
         adj_cell = self.get_adj_cell()
         safe_adj_cell = []
 
@@ -153,51 +174,44 @@ class Agent:
             pit_safe = self.KB.infer(Not(pit_symbol))
             gas_safe = self.KB.infer(Not(gas_symbol))
 
-            # KB chỉ được cập nhật nếu chắc chắn là không có wumpus, pit, gas
-            if self.KB.infer(Not(wumpus_symbol)):
-                self.KB.add_clause([Not(wumpus_symbol)])
-            if self.KB.infer(Not(pit_symbol)):
-                self.KB.add_clause([Not(pit_symbol)])
-            if self.KB.infer(Not(gas_symbol)):
-                self.KB.add_clause([Not(gas_symbol)])
-
-            if wumpus_safe and pit_safe and gas_safe:
-                safe_adj_cell.append((nx, ny))
-            elif gas_safe and self.current_hp >= 75:
-                # Có thể cân nhắc di chuyển vào ô có khí độc nếu HP đủ cao
+            wumpus_danger = self.KB.infer(wumpus_symbol)
+            pit_danger = self.KB.infer(pit_symbol)
+            gas_danger = self.KB.infer(gas_symbol)
+            
+            
+            if wumpus_safe and pit_safe and (gas_safe or self.current_hp >= 75):
                 safe_adj_cell.append((nx, ny))
 
         return safe_adj_cell
     
     def backtracking_search(self):
-        print(self.current_position)
+        print(self.do_in_percept())
+        print(self.current_percept)
+        
         if not self.is_alive:
             return False
         
-        self.perceive_current_cell()
-        print(self.do_in_percept())
+        self.explored_cells.add(self.current_position)  # Mark the current cell as explored
+
         safe_adj_cells = self.check_safeadjcell()
-        print(safe_adj_cells)
         if not safe_adj_cells:
             return False
 
         for cell in safe_adj_cells:
-            self.last_position = self.current_position
-            self.current_position = cell
+            if cell not in self.explored_cells:  # Check if the cell has not been explored
+                self.move_to(cell)
 
-            if self.backtracking_search():
-                return True
-            else:
-                self.current_position = self.last_position
+                if self.backtracking_search():
+                    return True
+                else:
+                    self.current_position = self.last_position
 
         return False
-
+    
     def move_to(self, new_position):
         self.last_position = self.current_position
         self.current_position = new_position
         self.interface.set_agent_cell(self.current_position)
-        self.perceive_current_cell()
-        self.check_percept()
 
     def get_direction(self, current, target):
         dx = target[0] - current[0]
