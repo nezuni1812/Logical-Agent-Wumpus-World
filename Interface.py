@@ -39,7 +39,7 @@ class Interface:
         elif state[State.DIRECTION.value] == 'S':
             state[State.DIRECTION.value] = (1, 0)
         else:
-            state[State.DIRECTION.value] = directions[State.DIRECTION.value]
+            state[State.DIRECTION.value] = directions[state[State.DIRECTION.value]]
         self.program.log_state(state)
 
     def get_grid_size(self):

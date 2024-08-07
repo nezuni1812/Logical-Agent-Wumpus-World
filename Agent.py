@@ -169,38 +169,106 @@ class Agent:
             pit_safe = self.KB.infer(Not(pit_symbol))
             gas_safe = self.KB.infer(Not(gas_symbol))
 
-            wumpus_danger = self.KB.infer(wumpus_symbol)
-            pit_danger = self.KB.infer(pit_symbol)
-            gas_danger = self.KB.infer(gas_symbol)
+            # self.KB.add_clause(wumpus_symbol)
+
+            # wumpus_danger = self.KB.infer(wumpus_symbol)
+            # pit_danger = self.KB.infer(pit_symbol)
+            # gas_danger = self.KB.infer(gas_symbol)
             
+            # if wumpus_danger:
+            #     self.point = self.point - 100
+            #     state = [self.current_position, self.direction, 'SHOOT_WUMPUS', self.point, self.current_hp, self.heal_potions]
+            #     self.interface.log_state(state)
+
             
-            if wumpus_safe and pit_safe and (gas_safe or self.current_hp >= 75):
+            if wumpus_safe and pit_safe and gas_safe or (gas_safe == False and self.current_hp >= 75):
                 safe_adj_cell.append((nx, ny))
 
         return safe_adj_cell
     
+    def check_wumpus_cell(self):
+        self.perceive_current_cell()
+        adj_cell = self.get_adj_cell()
+        safe_adj_cell = []
+
+        for nx, ny in adj_cell:
+            wumpus_symbol = symbols(f'W{nx}{ny}')
+            wumpus_safe = self.KB.infer(Not(wumpus_symbol))
+            wumpus_danger = self.KB.infer(wumpus_symbol)
+            # self.KB.add_clause(wumpus_symbol)
+
+            if wumpus_danger == True:
+                self.point = self.point - 100
+                state = [self.current_position, self.direction, 'SHOOT_WUMPUS', self.point, self.current_hp, self.heal_potions]
+                self.interface.log_state(state)
+                safe_adj_cell.append((nx, ny))
+
+            elif wumpus_safe:
+                safe_adj_cell.append((nx, ny))
+            
+            elif wumpus_danger == False and wumpus_safe == False:
+                self.point = self.point - 100
+                state = [self.current_position, self.direction, 'SHOOT_WUMPUS', self.point, self.current_hp, self.heal_potions]
+                self.interface.log_state(state)
+                safe_adj_cell.append((nx, ny))
+
+        return safe_adj_cell
+
+    def check_pit_cell(self):
+        self.perceive_current_cell()
+        adj_cell = self.get_adj_cell()
+        safe_adj_cell = []
+
+        for nx, ny in adj_cell:
+            pit_symbol = symbols(f'P{nx}{ny}')
+            pit_safe = self.KB.infer(Not(pit_symbol))
+            # self.KB.add_clause(wumpus_symbol)
+
+            if pit_safe == True:
+                safe_adj_cell.append((nx, ny))
+        return safe_adj_cell
+    
+    def check_gas_cell(self):
+        self.perceive_current_cell()
+        adj_cell = self.get_adj_cell()
+        safe_adj_cell = []
+
+        for nx, ny in adj_cell:
+            gas_symbol = symbols(f'P_G{nx}{ny}')
+            gas_safe = self.KB.infer(Not(gas_symbol))
+            gas_danger = self.KB.infer(gas_symbol)
+            # self.KB.add_clause(wumpus_symbol)
+            
+            if gas_safe or (gas_danger and self.current_hp >= 75) or (gas_danger == False and gas_safe == False and self.current_hp >= 75):
+                safe_adj_cell.append((nx, ny))
+        return safe_adj_cell
+    
     def backtracking_search(self):
+        print(self.current_position)
         print(self.do_in_percept())
-        print(self.current_percept)
+        # print(self.current_percept)
         
         if not self.is_alive:
             return False
         
         self.explored_cells.add(self.current_position)  # Mark the current cell as explored
-
-        safe_adj_cells = self.check_safeadjcell()
+        safe_adj_cells = set()
+        safe_adj_cells.update(self.check_pit_cell())
+        safe_adj_cells = safe_adj_cells.intersection(self.check_gas_cell())
+        safe_adj_cells = safe_adj_cells.intersection(self.check_wumpus_cell())
+        print(safe_adj_cells)
         if not safe_adj_cells:
             return False
-
+    
         for cell in safe_adj_cells:
             if cell not in self.explored_cells:  # Check if the cell has not been explored
                 self.move_to(cell)
-
+    
                 if self.backtracking_search():
                     return True
                 else:
                     self.current_position = self.last_position
-
+    
         return False
     
     def move_to(self, new_position):

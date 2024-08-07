@@ -124,7 +124,7 @@ class Program:
         elif '4' in cell and state[State.EVENT.value] == 'GRAB_HEALING_POTION':
             self.grid[x][y] = ''
         elif '1' in direct_cell and state[State.EVENT.value] == 'SHOOT_WUMPUS':
-            self.grid[x + direct_x][y + direct_y] = ''
+            self.grid[x + direct_x][y + direct_y] = self.grid[x + direct_x][y + direct_y].replace('1', '')
             self.delete_percepts(x + direct_x, y + direct_y, '5')
             
 
