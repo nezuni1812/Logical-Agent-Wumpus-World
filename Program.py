@@ -119,9 +119,10 @@ class Program:
         cell = self.grid[x][y]
 
         if '9' in cell and state[State.EVENT.value] == 'GRAB_GOLD':
-            self.grid[x][y] = ''
+            self.grid[x][y] = self.grid[x][y].replace('9', '')
         elif '4' in cell and state[State.EVENT.value] == 'GRAB_HEALING_POTION':
-            self.grid[x][y] = ''
+            self.grid[x][y] = self.grid[x][y].replace('4', '')
+            self.delete_percepts(x, y, '8')
         elif state[State.EVENT.value] == 'SHOOT_WUMPUS':
             direct_x, direct_y = state[State.DIRECTION.value]
             direct_cell = self.grid[x + direct_x][y + direct_y]

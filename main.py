@@ -9,9 +9,11 @@ if __name__ == "__main__":
     # print(agent.perceive_current_cell())
     # print(agent.check_safeadjcell())
     # print(agent.do_in_percept())
-    # program.display_grid()
+    program.display_grid()
+    # state = [(1,1), "N", "SHOOT_WUMPUS", 0, 100, 0]
+    # agent.interface.log_state(state)
     agent.backtracking_search()
     # program.display_grid()
     # state = [(1,1), "N", "SHOOT_WUMPUS", 0, 100, 0]
     # agent.interface.log_state(state)
-    # program.display_grid()
+    program.display_grid()

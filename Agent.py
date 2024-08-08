@@ -28,7 +28,7 @@ class Agent:
         self.KB = WumpusKB()
         self.interface.set_agent_cell(self.current_position)
         self.explored_cells = set()
-        self.safe_explored_cells = set()
+        self.safe_cells = set()
 
     def get_adj_cell(self):
         x, y = self.current_position
@@ -56,6 +56,7 @@ class Agent:
                 
                 if percept == '~S':
                     for nx, ny in neighbors:
+                        
                         self.KB.add_clause(Not(symbols(f'W{nx}{ny}')))
                 
                 elif percept == '~B':
@@ -81,7 +82,7 @@ class Agent:
                 elif percept == 'B':
                     neighbor_literals = [symbols(f'P{nx}{ny}') for nx, ny in neighbors]
                     percept_infer_symbol = Or(*neighbor_literals)  # Pit positions
-                    self.KB.add_clause(percept_infer_symbol)       
+                    self.KB.add_clause(percept_infer_symbol)
                     self.KB.delete_clause(Not(percept_symbol))                 
 
                 elif percept == 'W_H':
@@ -221,7 +222,7 @@ class Agent:
     def check_wumpus_cell(self, adj_cell):
         self.perceive_current_cell()
         if '~S' in self.current_percept:
-            return self.get_adj_cell()
+            return adj_cell
 
         safe_adj_cell = []
 
@@ -258,7 +259,7 @@ class Agent:
 
     def check_pit_cell(self, adj_cell):
         if '~B' in self.current_percept:
-            return self.get_adj_cell()
+            return adj_cell
         self.perceive_current_cell()
         
         safe_adj_cell = []
@@ -267,6 +268,9 @@ class Agent:
             pit_symbol = symbols(f'P{nx}{ny}')
             pit_safe = self.KB.infer(Not(pit_symbol))
             pit_danger = self.KB.infer(pit_symbol)
+            
+            # print(nx, ny, pit_danger, pit_safe)
+            # print(self.KB.print_KB())
 
             if pit_danger:
                 self.KB.add_clause(pit_symbol)
@@ -274,13 +278,16 @@ class Agent:
                 safe_adj_cell.append((nx, ny))
                 self.KB.add_clause(Not(pit_symbol))
             elif pit_danger == False and pit_safe == False:
+                # We can't determine if this cell is safe or not
                 continue
-                
+
+        # print(1, safe_adj_cell)    
+        
         return safe_adj_cell
     
     def check_gas_cell(self, adj_cell):
         if '~W_H' in self.current_percept:
-            return self.get_adj_cell()
+            return adj_cell
         self.perceive_current_cell()
         
         safe_adj_cell = []
@@ -301,47 +308,71 @@ class Agent:
                 safe_adj_cell.append((nx, ny))
             
         return safe_adj_cell
-    
+
     def backtracking_search(self):
-        self.do_in_percept()
-        if not self.is_alive:
-            return False
-        self.safe_explored_cells.add(self.current_position)
-        self.explored_cells.add(self.current_position)  # Mark the current cell as explored
-        safe_adj_cells = set()
-        adj_cell = self.get_adj_cell()
-        safe_adj_cells.update(self.check_pit_cell(adj_cell))
-        safe_adj_cells = safe_adj_cells.intersection(self.check_gas_cell(adj_cell))
-        safe_adj_cells = safe_adj_cells.intersection(self.check_wumpus_cell(adj_cell))
-        for cell in safe_adj_cells:
-            self.safe_explored_cells.add(cell)
-        # print(safe_adj_cells)
-        if not safe_adj_cells:
-            return False
-        
-        for cell in safe_adj_cells:
-            if cell not in self.explored_cells:  # Check if the cell has not been explored
-                print(self.current_position, cell)
-                if abs(cell[0] - self.current_position[0]) + abs(cell[1] - self.current_position[1]) == 1:
-                    print("A")
-                    self.move_to_adj_cell(cell)
-                else:
-                    self.safe_explored_cells.add(cell)
-                    path = self.bfs_path(self.current_position, cell)
-                    # print(path)
-                    self.move_to(cell)
-                    # if path:
-                    #     for step in path[1:]:  # Skip the first step as it's the current position
-                    #         print("B")
-                    #         self.move_to_adj_cell(step)
-                if self.backtracking_search():
-                    return True
-                else:
-                    self.current_position = self.last_position
-        
-        return False
+        while self.is_alive:
+            self.do_in_percept()  # Handle the percepts at the current cell
+            
+            if not self.is_alive:
+                print("Agent is dead. Exploration terminated.")
+                break
+            
+            self.safe_cells.add(self.current_position)
+            self.explored_cells.add(self.current_position)
+            
+            adj_cell = self.get_adj_cell()
 
+            safe_pit_cells = self.check_pit_cell(adj_cell)
+            safe_gas_cells = self.check_gas_cell(adj_cell)
+            safe_wumpus_cells = self.check_wumpus_cell(adj_cell)
+            
+            adj_cell = self.get_adj_cell() #Vì có thể sau khi check wumpus, hướng của agent thay đổi 
+            #-> agent_cell thay đổi vì agent_cell sẽ chứa cell theo độ ưu tiên dựa trên hướng của agent
 
+            safe_adj_cells = [cell for cell in adj_cell if all([cell in safe_pit_cells, cell in safe_gas_cells, cell in safe_wumpus_cells])]
+
+            for cell in safe_adj_cells:
+                self.safe_cells.add(cell)
+                
+            if safe_adj_cells:
+                moved = False
+                for cell in safe_adj_cells:
+                    if cell not in self.explored_cells:
+                        self.move_to_adj_cell(cell)
+                        moved = True
+                        break
+                if not moved:
+                    # If no move was made, backtrack
+                    closest_safe_cell = self.find_closest_safe_cell(self.safe_cells - self.explored_cells)
+                    if closest_safe_cell:
+                        path = self.bfs_path(self.current_position, closest_safe_cell)
+                        if path:
+                            for step in path[1:]:  # Skip the first step as it's the current position
+                                self.move_to_adj_cell(step)
+                        else:
+                            print("No valid path to the closest safe cell. Exploration complete.")
+                            break
+                    else:
+                        self.explored_cells.add(self.current_position)
+                        print("Current cell: " + str(self.current_position) + " Total cells pass: " + str(len(self.explored_cells)))
+                        print("No more safe cells to explore or backtrack to. Exploration complete.")
+                        break
+            else:
+                # No adjacent safe cells, backtrack or terminate
+                print("No more adjacent safe cells. Backtracking.")
+                break
+
+    def find_closest_safe_cell(self, safe_cells):
+        """Find the closest safe cell to the current position."""
+        min_distance = int(1e9)
+        closest_cell = None
+        for cell in safe_cells:
+            distance = abs(cell[0] - self.current_position[0]) + abs(cell[1] - self.current_position[1])
+            if distance < min_distance:
+                min_distance = distance
+                closest_cell = cell
+        return closest_cell
+    
     def move_to_adj_cell(self, new_position):
         self.last_position = self.current_position
         self.current_position = new_position
@@ -388,11 +419,6 @@ class Agent:
             return "W"
         return self.direction
     
-    def move_to(self, new_position):
-        self.last_position = self.current_position
-        self.current_position = new_position
-        self.interface.set_agent_cell(self.current_position)
-
     def get_adj_cell_from_position(self, position):
         x, y = position
         adj_cell = []
@@ -419,7 +445,7 @@ class Agent:
             
             # Expand the neighbors
             for neighbor in self.get_adj_cell_from_position(current):
-                if neighbor in self.safe_explored_cells and neighbor not in visited:
+                if neighbor in self.safe_cells and neighbor not in visited:
                     visited.add(neighbor)
                     queue.append((neighbor, path + [neighbor]))
         
