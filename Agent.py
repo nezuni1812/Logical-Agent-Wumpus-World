@@ -93,7 +93,6 @@ class Agent:
                 percept_symbol = Not(percept_symbol)
                 self.KB.add_clause(percept_symbol)
                 self.KB.delete_clause(symbols(f'{percept[1:]}{x}{y}'))
-                
                 if percept == '~S':
                     for nx, ny in neighbors:
                         self.KB.add_clause(Not(symbols(f'W{nx}{ny}')))
@@ -108,14 +107,15 @@ class Agent:
                 
                 elif percept == '~G_L':
                     for nx, ny in neighbors:
-                        self.process_symbol_xy('H_P', 'G_L', nx, ny)
                         self.KB.add_clause(Not(symbols(f'H_P{nx}{ny}')))
                 
-                # elif percept == '~H_P':
-                #     self.process_symbol_xy('H_P', 'G_L', x, y)
+                elif percept == '~H_P':
+                    for nx, ny in neighbors:
+                        self.process_symbol_xy('H_P', 'G_L', nx, ny)
                     
-                # elif percept == '~W':
-                #     self.process_symbol_xy('W', 'S', x, y)
+                elif percept == '~W':
+                    for nx, ny in neighbors:
+                        self.process_symbol_xy('W', 'S', nx, ny)
             
             else:
                 percept_symbol = symbols(f'{percept}{x}{y}')
@@ -314,6 +314,9 @@ class Agent:
             pit_symbol = symbols(f'P{nx}{ny}')
             pit_safe = self.KB.infer(Not(pit_symbol))
             pit_danger = self.KB.infer(pit_symbol)
+            
+            # print(nx, ny, pit_safe, pit_danger)
+            # self.KB.print_KB()
 
             if pit_danger:
                 self.KB.add_clause(pit_symbol)
