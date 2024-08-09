@@ -29,6 +29,16 @@ class Agent:
         self.interface.set_agent_cell(self.current_position)
         self.explored_cells = set()
         self.safe_cells = set()
+        
+    def get_adj_percept_cell(self, x, y):
+        adj_cell = []
+        for dx, dy in directions_vectors.values():
+            row = x + dx
+            col = y + dy
+            if 1 <= row <= 4 and 1 <= col <= 4:
+                adj_cell.append((row, col))
+        
+        return adj_cell
 
     def get_adj_cell(self):
         x, y = self.current_position
@@ -41,6 +51,36 @@ class Agent:
                 adj_cell.append((row, col))
         return adj_cell
     
+    def process_symbol_xy(self, pos_symbol, neg_symbol, x, y):
+        negated_pos_xy = symbols(f'{pos_symbol}{x}{y}')
+        inferred = self.KB.infer(negated_pos_xy) # Check if ~pos_symbol_xy can be inferred
+        if inferred:
+            neighbors = self.get_adj_percept_cell(x, y)  # Get the adjacent cells based on the current position and direction
+            for nx, ny in neighbors:
+                neg_symbol_xy = symbols(f'{neg_symbol}{nx}{ny}')
+                if self.KB.infer(neg_symbol_xy):  # Check if neg_symbol is inferred in the neighbor
+                    # Get the neighbors of (nx, ny)
+                    adj_neighbors = self.get_adj_percept_cell(nx, ny)
+
+                    # Create the Or(pos_symbol...) clause for neg_symbol_xy
+                    pos_literals = [symbols(f'{pos_symbol}{adj_x}{adj_y}') for adj_x, adj_y in adj_neighbors]
+                    neg_clause = Or(*pos_literals)
+                    # Check the other three cells for ~pos_symbol
+                    all_others_negated = True
+                    for adj_x, adj_y in neighbors:
+                        if adj_x == x and adj_y == y:
+                            continue  # Skip pos_symbol_xy itself
+
+                        negated_pos = Not(symbols(f'{pos_symbol}{adj_x}{adj_y}'))
+                        if not self.KB.infer(negated_pos):
+                            all_others_negated = False
+                            break
+                    
+                    # If the negation condition for the other three cells is met, remove clauses
+                    if all_others_negated:
+                        self.KB.delete_clause(neg_clause)  # Remove the Or(pos_symbol...) clause
+                        self.KB.delete_clause(neg_symbol_xy)  # Remove neg_symbol from the KB   
+                         
     def perceive_current_cell(self):
         self.current_percept = self.interface.get_percepts()  # Example: {'P', '~W', '~S',...}
 
@@ -56,7 +96,6 @@ class Agent:
                 
                 if percept == '~S':
                     for nx, ny in neighbors:
-                        
                         self.KB.add_clause(Not(symbols(f'W{nx}{ny}')))
                 
                 elif percept == '~B':
@@ -69,7 +108,14 @@ class Agent:
                 
                 elif percept == '~G_L':
                     for nx, ny in neighbors:
+                        self.process_symbol_xy('H_P', 'G_L', nx, ny)
                         self.KB.add_clause(Not(symbols(f'H_P{nx}{ny}')))
+                
+                # elif percept == '~H_P':
+                #     self.process_symbol_xy('H_P', 'G_L', x, y)
+                    
+                # elif percept == '~W':
+                #     self.process_symbol_xy('W', 'S', x, y)
             
             else:
                 percept_symbol = symbols(f'{percept}{x}{y}')
@@ -268,9 +314,6 @@ class Agent:
             pit_symbol = symbols(f'P{nx}{ny}')
             pit_safe = self.KB.infer(Not(pit_symbol))
             pit_danger = self.KB.infer(pit_symbol)
-            
-            print(nx, ny, pit_danger, pit_safe, f'P{nx}{ny}')
-            self.KB.print_KB()
 
             if pit_danger:
                 self.KB.add_clause(pit_symbol)
@@ -279,8 +322,6 @@ class Agent:
                 self.KB.add_clause(Not(pit_symbol))
             elif pit_danger == False and pit_safe == False:
                 continue
-
-        # print(1, safe_adj_cell)    
         
         return safe_adj_cell
     
