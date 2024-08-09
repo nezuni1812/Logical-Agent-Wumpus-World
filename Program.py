@@ -128,13 +128,13 @@ class Program:
             self.grid[x + direct_x][y + direct_y] = self.grid[x + direct_x][y + direct_y].replace('1', '-')
             self.delete_percepts(x + direct_x, y + direct_y, '5')
             self.generate_percepts()
-            self.grid[x][y] = self.grid[x][y].replace('4', '')
+            self.grid[x][y] = self.grid[x][y].replace('4', '-')
             self.delete_percepts(x, y, '8')
         elif state[State.EVENT.value] == 'SHOOT_WUMPUS':
             direct_x, direct_y = state[State.DIRECTION.value]
             direct_cell = self.grid[x + direct_x][y + direct_y]
             if '1' in direct_cell: 
-                self.grid[x + direct_x][y + direct_y] = self.grid[x + direct_x][y + direct_y].replace('1', '')
+                self.grid[x + direct_x][y + direct_y] = self.grid[x + direct_x][y + direct_y].replace('1', '-')
                 self.delete_percepts(x + direct_x, y + direct_y, '5')
             
 
