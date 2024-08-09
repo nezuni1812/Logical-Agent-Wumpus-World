@@ -24,6 +24,7 @@ class Interface:
         return None
 
     def log_state(self, state):
+        print(state)
         state_str = (f"Position: {state[State.POSITION.value]} "
                     f"Direction: {state[State.DIRECTION.value]} "
                     f"Action: {state[State.EVENT.value]} "
@@ -32,15 +33,20 @@ class Interface:
                     f"Heal_Potions: {state[State.HEAL_POTIONS.value]}")
         with open(self.output_file, 'a') as file:
             file.write(state_str + '\n')
-        state[State.POSITION.value] = self.convert_wumpus_to_matrix(state[State.POSITION.value])
+            
+        internal_state = state.copy()
+        internal_state[State.POSITION.value] = self.convert_wumpus_to_matrix(state[State.POSITION.value])
 
         if state[State.DIRECTION.value] == 'N':
-            state[State.DIRECTION.value] = (-1, 0)
+            internal_state[State.DIRECTION.value] = (-1, 0)
         elif state[State.DIRECTION.value] == 'S':
-            state[State.DIRECTION.value] = (1, 0)
+            internal_state[State.DIRECTION.value] = (1, 0)
         else:
-            state[State.DIRECTION.value] = directions[state[State.DIRECTION.value]]
-        self.program.log_state(state)
+            internal_state[State.DIRECTION.value] = directions_vectors[state[State.DIRECTION.value]]
+
+        self.program.log_state(internal_state)
+        
+        return state
 
     def get_grid_size(self):
         return self.program.grid_size
