@@ -18,25 +18,25 @@ class Program:
                     cell_content = self.grid[x][y]
                     if cell_content != '-':
                         objects = cell_content.split(',')
-                        percept_numbers = set()
+                        percept_numbers = []
                         
-                        # Check and add percepts
-                        if 'W' in objects:
-                            percept_numbers.add('1')  # Wumpus
-                        if 'P_G' in objects:
-                            percept_numbers.add('3')  # Poisonous Gas
-                        if 'P' in objects:
-                            percept_numbers.add('2')  # Pit
-                        if 'H_P' in objects:
-                            percept_numbers.add('4')  # Healing Potion
-                        if 'C' in objects:
-                            percept_numbers.add('9')  # Chess of gold
-                        
+                        # Check and add percepts for each object occurrence
+                        for obj in objects:
+                            if obj == 'W':
+                                percept_numbers.append('1')  # Wumpus
+                            elif obj == 'P_G':
+                                percept_numbers.append('3')  # Poisonous Gas
+                            elif obj == 'P':
+                                percept_numbers.append('2')  # Pit
+                            elif obj == 'H_P':
+                                percept_numbers.append('4')  # Healing Potion
+                            elif obj == 'C':
+                                percept_numbers.append('9')  # Chess of gold
+                            
                         # Combine percepts into a string
                         self.grid[x][y] = ''.join(sorted(percept_numbers))
                     else:
                         self.grid[x][y] = ''
-    
 
     def generate_percepts(self):
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
@@ -92,6 +92,23 @@ class Program:
         
         return result
 
+    def get_cell_info_after_shoot(self, x, y):
+        cell_content = self.grid[x][y]
+        
+        percepts = []
+        if '5' in cell_content:
+            percepts.append('S')
+        else:
+            percepts.append('~S')
+            
+        if '0' in cell_content:
+            percepts.append('SCREAM')
+            self.grid[x][y] = cell_content.replace('0', '')
+        else:
+            percepts.append('~SCREAM')
+
+        return percepts
+
     def display_grid(self):
         for row in self.grid:
             formatted_row = []
@@ -128,11 +145,12 @@ class Program:
         elif state[State.EVENT.value] == 'SHOOT_WUMPUS':
             direct_x, direct_y = state[State.DIRECTION.value]
             direct_cell_x, direct_cell_y = x + direct_x, y + direct_y
-        
+
             if 0 <= direct_cell_x < self.grid_size and 0 <= direct_cell_y < len(self.grid[direct_cell_x]):
                 direct_cell = self.grid[direct_cell_x][direct_cell_y]
                 if '1' in direct_cell:
-                    self.grid[direct_cell_x][direct_cell_y] = direct_cell.replace('1', '')
+                    self.grid[x][y] += '0'  # Add '0' for scream
+                    self.grid[direct_cell_x][direct_cell_y] = direct_cell.replace('1', '', 1)  # Replace only one '1'
                     if self.grid[direct_cell_x][direct_cell_y] == '':
                         self.grid[direct_cell_x][direct_cell_y] = '-'
                     self.delete_percepts(direct_cell_x, direct_cell_y, '5')

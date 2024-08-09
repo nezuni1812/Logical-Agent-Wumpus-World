@@ -22,6 +22,11 @@ class Interface:
         if self.agent_cell:
             return self.program.get_cell_info(*self.agent_cell)
         return None
+    
+    def get_percepts_after_shoot(self):
+        if self.agent_cell:
+            return self.program.get_cell_info_after_shoot(*self.agent_cell)
+        return None
 
     def log_state(self, state):
         print(state)

@@ -268,7 +268,36 @@ class Agent:
         state = [self.current_position, self.direction, 'SHOOT_WUMPUS', self.point, self.current_hp, self.heal_potions]
         self.interface.log_state(state)
         self.point -= 100
-    
+        
+        percepts = self.interface.get_percepts_after_shoot()
+        self.process_symbol_xy ('W', 'S', self.current_position[0], self.current_position[1])
+        # print(percepts)
+        if 'SCREAM' in percepts:
+            state[State.EVENT.value] = 'HEARD_SCREAM'
+            self.interface.log_state(state)
+        elif '~SCREAM' in percepts:
+            state[State.EVENT.value] = 'HEARD_NOTHING'
+            self.interface.log_state(state)
+            self.KB.add_clause(Not(symbols(f'W{target_position[0]}{target_position[1]}')))
+            self.process_symbol_xy('W', 'S', target_position[0], target_position[1])
+            self.KB.delete_clause(symbols(f'W{target_position[0]}{target_position[1]}'))
+        
+        if 'S' in percepts:
+            self.KB.add_clause(symbols(f'S{self.current_position[0]}{self.current_position[1]}'))
+            self.KB.delete_clause(Not(symbols(f'S{self.current_position[0]}{self.current_position[1]}')))
+        elif '~S' in percepts: 
+            self.KB.add_clause(Not(symbols(f'S{self.current_position[0]}{self.current_position[1]}'))) 
+            self.KB.delete_clause(symbols(f'S{self.current_position[0]}{self.current_position[1]}'))
+            
+            neighbors = self.get_adj_cell() 
+            neighbor_literals = [symbols(f'W{x}{y}') for x, y in neighbors]
+            percept_symbol = And(*neighbor_literals) 
+            self.KB.add_clause(Not(symbols(f'W{target_position[0]}{target_position[1]}')))
+            self.process_symbol_xy('W', 'S', target_position[0], target_position[1])
+            self.KB.delete_clause(symbols(f'W{target_position[0]}{target_position[1]}'))
+
+        return percepts
+            
     def check_wumpus_cell(self, adj_cell):
         self.perceive_current_cell()
         if '~S' in self.current_percept:
@@ -280,30 +309,24 @@ class Agent:
             wumpus_symbol = symbols(f'W{nx}{ny}')
             wumpus_safe = self.KB.infer(Not(wumpus_symbol))
             wumpus_danger = self.KB.infer(wumpus_symbol)
+            
+            # print(nx, ny, wumpus_safe, wumpus_danger)
+            # self.KB.print_KB()
 
             if wumpus_danger == True:
-                self.shoot_wumpus((nx, ny))
-                safe_adj_cell.append((nx, ny))
-                
-                neighbors = self.get_adj_cell() 
-                neighbor_literals = [symbols(f'W{x}{y}') for x, y in neighbors]
-                percept_symbol = Or(*neighbor_literals) 
-                self.KB.add_clause(Not(wumpus_symbol))
-                self.KB.delete_clause(percept_symbol)
-
+                percepts = self.shoot_wumpus((nx, ny))
+                if '~S' in percepts:
+                    safe_adj_cell.append((nx, ny))
+                    
             elif wumpus_safe:
                 safe_adj_cell.append((nx, ny))
+                self.process_symbol_xy('W', 'S', nx, ny)
                 self.KB.add_clause(Not(wumpus_symbol))
             
             elif wumpus_danger == False and wumpus_safe == False:
-                self.shoot_wumpus((nx, ny))
-                safe_adj_cell.append((nx, ny))
-                
-                neighbors = self.get_adj_cell() 
-                neighbor_literals = [symbols(f'W{x}{y}') for x, y in neighbors]
-                percept_symbol = Or(*neighbor_literals) 
-                self.KB.add_clause(Not(wumpus_symbol))
-                self.KB.delete_clause(percept_symbol)
+                percepts = self.shoot_wumpus((nx, ny))
+                if '~SCREAM' in percepts:
+                    safe_adj_cell.append((nx, ny))
 
         return safe_adj_cell
 
