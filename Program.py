@@ -119,26 +119,27 @@ class Program:
         cell = self.grid[x][y]
 
         if '9' in cell and state[State.EVENT.value] == 'GRAB_GOLD':
-            self.grid[x][y] = '-'
             self.grid[x][y] = self.grid[x][y].replace('9', '')
+            if self.grid[x][y] == '':
+                self.grid[x][y] = '-'
         elif '4' in cell and state[State.EVENT.value] == 'GRAB_HEALING_POTION':
-            self.grid[x][y] = '-'
+            self.grid[x][y] = self.grid[x][y].replace('4', '')
+            if self.grid[x][y] == '':
+                self.grid[x][y] = '-'
             self.generate_percepts()
-        elif '1' in direct_cell and state[State.EVENT.value] == 'SHOOT_WUMPUS':
-            self.grid[x + direct_x][y + direct_y] = self.grid[x + direct_x][y + direct_y].replace('1', '-')
-            self.delete_percepts(x + direct_x, y + direct_y, '5')
-            self.generate_percepts()
-            self.grid[x][y] = self.grid[x][y].replace('4', '-')
-            self.delete_percepts(x, y, '8')
+  
         elif state[State.EVENT.value] == 'SHOOT_WUMPUS':
             direct_x, direct_y = state[State.DIRECTION.value]
-            direct_cell = self.grid[x + direct_x][y + direct_y]
-            if '1' in direct_cell: 
-                self.grid[x + direct_x][y + direct_y] = self.grid[x + direct_x][y + direct_y].replace('1', '-')
-                self.delete_percepts(x + direct_x, y + direct_y, '5')
-            
+            direct_cell_x, direct_cell_y = x + direct_x, y + direct_y
+        
+            if 0 <= direct_cell_x < self.grid_size and 0 <= direct_cell_y < len(self.grid[direct_cell_x]):
+                direct_cell = self.grid[direct_cell_x][direct_cell_y]
+                if '1' in direct_cell:
+                    self.grid[direct_cell_x][direct_cell_y] = direct_cell.replace('1', '')
+                    if self.grid[direct_cell_x][direct_cell_y] == '':
+                        self.grid[direct_cell_x][direct_cell_y] = '-'
+                    self.generate_percepts()
 
-# Example usage
 if __name__ == "__main__":
     program = Program('map1.txt', 'outpu2.txt')
     x, y = 0, 0
