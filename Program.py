@@ -113,6 +113,8 @@ class Program:
             if 0 <= nx < self.grid_size and 0 <= ny < len(self.grid[nx]):
                 if percepts in self.grid[nx][ny]:
                     self.grid[nx][ny] = self.grid[nx][ny].replace(percepts, '')
+                if self.grid[nx][ny] == '':
+                    self.grid[nx][ny] = '-'
 
     def update_map_after_log_state(self, state):
         x, y = state[State.POSITION.value]
@@ -124,6 +126,7 @@ class Program:
                 self.grid[x][y] = '-'
         elif '4' in cell and state[State.EVENT.value] == 'GRAB_HEALING_POTION':
             self.grid[x][y] = self.grid[x][y].replace('4', '')
+            self.delete_percepts(x, y, '8')
             if self.grid[x][y] == '':
                 self.grid[x][y] = '-'
             self.generate_percepts()
@@ -138,6 +141,7 @@ class Program:
                     self.grid[direct_cell_x][direct_cell_y] = direct_cell.replace('1', '')
                     if self.grid[direct_cell_x][direct_cell_y] == '':
                         self.grid[direct_cell_x][direct_cell_y] = '-'
+                    self.delete_percepts(direct_cell_x, direct_cell_y, '5')
                     self.generate_percepts()
 
 if __name__ == "__main__":
