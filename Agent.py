@@ -269,8 +269,8 @@ class Agent:
             pit_safe = self.KB.infer(Not(pit_symbol))
             pit_danger = self.KB.infer(pit_symbol)
             
-            # print(nx, ny, pit_danger, pit_safe)
-            # print(self.KB.print_KB())
+            print(nx, ny, pit_danger, pit_safe, f'P{nx}{ny}')
+            self.KB.print_KB()
 
             if pit_danger:
                 self.KB.add_clause(pit_symbol)
@@ -278,7 +278,6 @@ class Agent:
                 safe_adj_cell.append((nx, ny))
                 self.KB.add_clause(Not(pit_symbol))
             elif pit_danger == False and pit_safe == False:
-                # We can't determine if this cell is safe or not
                 continue
 
         # print(1, safe_adj_cell)    
