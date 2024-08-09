@@ -54,6 +54,7 @@ class Agent:
     def process_symbol_xy(self, pos_symbol, neg_symbol, x, y):
         negated_pos_xy = symbols(f'{pos_symbol}{x}{y}')
         inferred = self.KB.infer(negated_pos_xy) # Check if ~pos_symbol_xy can be inferred
+        # print(negated_pos_xy, inferred)
         if inferred:
             neighbors = self.get_adj_percept_cell(x, y)  # Get the adjacent cells based on the current position and direction
             for nx, ny in neighbors:
@@ -78,6 +79,7 @@ class Agent:
                     
                     # If the negation condition for the other three cells is met, remove clauses
                     if all_others_negated:
+                        # print(2, neg_clause, neg_symbol_xy)
                         self.KB.delete_clause(neg_clause)  # Remove the Or(pos_symbol...) clause
                         self.KB.delete_clause(neg_symbol_xy)  # Remove neg_symbol from the KB   
                          
@@ -175,8 +177,10 @@ class Agent:
             elif percept == 'H_P':
                 self.heal_potions += 1
                 self.point -= 10
+                self.process_symbol_xy('H_P', 'G_L', self.current_position[0], self.current_position[1])
                 state[State.EVENT.value] = 'GRAB_HEALING_POTION'
                 self.interface.log_state(state)
+                self.KB.add_clause(Not(symbols(f'H_P{self.current_position[0]}{self.current_position[1]}')))
 
             elif percept == 'P_G':
                 self.current_hp -= 25
