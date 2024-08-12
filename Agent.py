@@ -1,6 +1,7 @@
 from KnowledgeBase import *
 from State import *
 from collections import deque
+import heapq
 
 # W - ma, P: pit, G: gold, P_G: -25%, H_P: +25%, S: thúi, B: lạnh, 
 # W_H: tỏa ra từ hơi độc, G_L: tỏa ra từ +25%
@@ -29,7 +30,8 @@ class Agent:
         self.interface.set_agent_cell(self.current_position)
         self.explored_cells = set()
         self.safe_cells = set()
-        
+        self.gas_explored = set()
+
     def get_adj_percept_cell(self, x, y):
         adj_cell = []
         for dx, dy in directions_vectors.values():
@@ -183,6 +185,7 @@ class Agent:
                 self.KB.add_clause(Not(symbols(f'H_P{self.current_position[0]}{self.current_position[1]}')))
 
             elif percept == 'P_G':
+                self.gas_explored.add(self.current_position)
                 self.current_hp -= 25
                 state[State.EVENT.value] = 'POISONED_BY_POISON_GAS'
                 self.interface.log_state(state)
@@ -211,37 +214,6 @@ class Agent:
             state[State.POINT.value] = self.point
             state[State.HP.value] = self.current_hp
             state[State.HEAL_POTIONS.value] = self.heal_potions
-
-    def check_safeadjcell(self):
-        self.perceive_current_cell()
-        adj_cell = self.get_adj_cell()
-        safe_adj_cell = []
-
-        for nx, ny in adj_cell:
-            wumpus_symbol = symbols(f'W{nx}{ny}')
-            pit_symbol = symbols(f'P{nx}{ny}')
-            gas_symbol = symbols(f'P_G{nx}{ny}')
-
-            wumpus_safe = self.KB.infer(Not(wumpus_symbol))
-            pit_safe = self.KB.infer(Not(pit_symbol))
-            gas_safe = self.KB.infer(Not(gas_symbol))
-
-            # self.KB.add_clause(wumpus_symbol)
-
-            # wumpus_danger = self.KB.infer(wumpus_symbol)
-            # pit_danger = self.KB.infer(pit_symbol)
-            # gas_danger = self.KB.infer(gas_symbol)
-            
-            # if wumpus_danger:
-            #     self.point = self.point - 100
-            #     state = [self.current_position, self.direction, 'SHOOT_WUMPUS', self.point, self.current_hp, self.heal_potions]
-            #     self.interface.log_state(state)
-
-            
-            if wumpus_safe and pit_safe and gas_safe or (gas_safe == False and self.current_hp >= 75):
-                safe_adj_cell.append((nx, ny))
-
-        return safe_adj_cell
     
     def shoot_wumpus(self, target_position):        
         current_vector = directions_vectors[self.direction]
@@ -367,14 +339,15 @@ class Agent:
             gas_safe = self.KB.infer(Not(gas_symbol))
             gas_danger = self.KB.infer(gas_symbol)
             
-            if gas_danger:
+            Path, gas_back = self.a_star_minimize_should_not_go((1, 1), self.current_position, self.explored_cells - self.gas_explored, self.gas_explored)
+            if gas_danger == True:
                 self.KB.add_clause(gas_symbol)
-                if self.current_hp >= 50:
+                if self.current_hp - 25 - (gas_back * 25) + self.heal_potions*25 >= 25:
                     safe_adj_cell.append((nx, ny))
             elif gas_safe:
                 safe_adj_cell.append((nx, ny))
                 self.KB.add_clause(Not(gas_symbol))
-            elif self.current_hp >= 50:
+            elif gas_danger == False and gas_safe == False and self.current_hp - 25 - (gas_back * 25) + self.heal_potions*25 >= 25:
                 safe_adj_cell.append((nx, ny))
             
         return safe_adj_cell
@@ -382,7 +355,10 @@ class Agent:
     def backtracking_search(self):
         while self.is_alive:
             self.do_in_percept()  # Handle the percepts at the current cell
-            
+            if 'P_G' in self.current_percept:
+                Path_tmp, gas_back_tmp = self.a_star_minimize_should_not_go((1, 1), self.current_position, self.explored_cells - self.gas_explored, self.gas_explored)
+                if self.current_hp - ((gas_back_tmp + 1) * 25) + self.heal_potions*25 == 0:
+                    break
             if not self.is_alive:
                 print("Agent is dead. Exploration terminated.")
                 break
@@ -400,9 +376,10 @@ class Agent:
             #-> agent_cell thay đổi vì agent_cell sẽ chứa cell theo độ ưu tiên dựa trên hướng của agent
 
             safe_adj_cells = [cell for cell in adj_cell if all([cell in safe_pit_cells, cell in safe_gas_cells, cell in safe_wumpus_cells])]
-
+            # print("Safe cells: ", safe_adj_cells, self.current_position)
             for cell in safe_adj_cells:
                 self.safe_cells.add(cell)
+
                 
             if safe_adj_cells:
                 moved = False
@@ -431,6 +408,9 @@ class Agent:
                 # No adjacent safe cells, backtrack or terminate
                 print("No more adjacent safe cells. Backtracking.")
                 break
+        Path, gas_back = self.a_star_minimize_should_not_go((1, 1), self.current_position, self.explored_cells - self.gas_explored, self.gas_explored)
+        Path.reverse()
+        print(Path)
 
     def find_closest_safe_cell(self, safe_cells):
         """Find the closest safe cell to the current position."""
@@ -520,3 +500,45 @@ class Agent:
                     queue.append((neighbor, path + [neighbor]))
         
         return None  # Return None if no path is found
+    
+    def a_star_minimize_should_not_go(self, start, goal, safe_cells, should_not_go_cells):
+        def heuristic(a, b):
+            return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+        open_set = []
+        heapq.heappush(open_set, (0, start))  # (priority, cell)
+        came_from = {}
+        g_score = {start: 0}
+        f_score = {start: heuristic(start, goal)}
+        gas_have_to_go_back = 0
+        
+        while open_set:
+            current = heapq.heappop(open_set)[1]
+            if current == goal:
+                # Reconstruct path
+                path = []
+                while current in came_from:
+                    path.append(current)
+                    current = came_from[current]
+                path.append(start)
+                path.reverse()
+                for cell in path:
+                    if cell in should_not_go_cells:
+                        gas_have_to_go_back += 1
+                if self.current_position in should_not_go_cells:
+                    gas_have_to_go_back -= 1
+                return path, gas_have_to_go_back
+
+            for neighbor in self.get_adj_cell_from_position(current):
+                if neighbor in safe_cells or neighbor in should_not_go_cells:
+                    tentative_g_score = g_score[current] + 1  # basic move cost
+
+                    if neighbor in should_not_go_cells:
+                        tentative_g_score += 300  # penalty for "should not go" cells
+                    
+                    if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
+                        came_from[neighbor] = current
+                        g_score[neighbor] = tentative_g_score
+                        f_score[neighbor] = tentative_g_score + heuristic(neighbor, goal)
+                        heapq.heappush(open_set, (f_score[neighbor], neighbor))
+        return None, 0
