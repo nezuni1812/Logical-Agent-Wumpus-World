@@ -95,7 +95,7 @@ def prev():
     state_index -= 1
     draw_path()
     
-agent_img_src = Image.open("resource/agent.png").resize((96, 96))
+agent_img_src = Image.open("resource/agent.png").resize((76, 76))
 agent_img = ImageTk.PhotoImage(agent_img_src)
 agent = None
 agent_rotation = 0
