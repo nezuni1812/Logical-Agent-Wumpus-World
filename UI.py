@@ -20,6 +20,9 @@ canvas_object_map = []
 ele_img_list = list[list[list]]
 ele_content_list: list[list[list]]
 img_list = []
+
+state_index = 0
+
 PADDING_TOP = 55
 PADDING_LEFT = 75
 CELL_SIZE = 88.5 # pixels
@@ -40,6 +43,10 @@ def init():
     
     # draw_objects()
     draw_layout()
+    # draw_path()
+    global state_index
+    root.bind("<Right>", lambda *args: next())
+    # root.bind("<Left>", lambda *args: prev())
     # wum_img = ImageTk.PhotoImage(Image.open("resource/wumpus.png"))
     # wum = canvas.create_image(0, 0, image=wum_img, anchor='center')
     
@@ -78,26 +85,90 @@ def load_map(input_file):
         print(grid)
     
     
-def draw_objects():
-    wum_img = ImageTk.PhotoImage(Image.open("resource/wumpus.png").resize((46, 46)))
-    agent_img = ImageTk.PhotoImage(Image.open("resource/agent.png").resize((46, 46)))
-    gold_img = ImageTk.PhotoImage(Image.open("resource/gold.png").resize((46, 46)))
-    heal_img = ImageTk.PhotoImage(Image.open("resource/heal.png").resize((46, 46)))
-    pit_img = ImageTk.PhotoImage(Image.open("resource/pit.png").resize((46, 46)))
-    poison_img = ImageTk.PhotoImage(Image.open("resource/poison.png").resize((46, 46)))
-    wind_img = ImageTk.PhotoImage(Image.open("resource/wind.png").resize((46, 46)))
+def next():
+    global state_index
+    state_index += 1
+    draw_path()
     
-    canvas_object_map[1] = canvas.create_image(0 + PADDING_LEFT, 0 + PADDING_TOP, image=wum_img, anchor='center')
-    canvas_object_map[2] = canvas.create_image(0 + PADDING_LEFT, 0 + PADDING_TOP, image=pit_img, anchor='center')
-    canvas_object_map[3] = canvas.create_image(0 + PADDING_LEFT, 0 + PADDING_TOP, image=poison_img, anchor='center')
-    canvas_object_map[4] = canvas.create_image(0 + PADDING_LEFT, 0 + PADDING_TOP, image=heal_img, anchor='center')
-    canvas_object_map[9] = canvas.create_image(0 + PADDING_LEFT, 0 + PADDING_TOP, image=gold_img, anchor='center')
+def prev():
+    global state_index
+    state_index -= 1
+    draw_path()
     
-    img_list.append(wum_img)
-    img_list.append(pit_img)
-    img_list.append(poison_img)
-    img_list.append(heal_img)
-    img_list.append(gold_img)
+agent_img_src = Image.open("resource/agent.png").resize((96, 96))
+agent_img = ImageTk.PhotoImage(agent_img_src)
+agent = None
+agent_rotation = 0
+def draw_path():
+    global states_log
+    global agent_img
+    global state_index
+    global agent
+    global agent_rotation
+    print('Running...', len(states_log))
+    
+    state = states_log[state_index]
+        
+    print(state)
+    before = state[0]
+    after = state[1]
+    action = state[2]
+    
+    if agent is None:
+        agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
+    
+    if 'RIGHT' in action:
+        print('Right')
+        degree = 0
+        while degree <= 90:
+            canvas.delete(agent)
+            agent_img = ImageTk.PhotoImage(agent_img_src.rotate(-agent_rotation - degree))
+            print('Right', degree)
+            agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
+            degree += 10
+            root.update()
+            root.after(40)
+            
+        canvas.delete(agent)
+        agent_rotation += 90
+        print(agent_rotation)
+        agent_img = ImageTk.PhotoImage(agent_img_src.rotate(-agent_rotation))
+        agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
+        
+    elif 'LEFT' in action:
+        print('Left')
+        degree = 0
+        while degree <= 90:
+            canvas.delete(agent)
+            agent_img = ImageTk.PhotoImage(agent_img_src.rotate(-agent_rotation + degree))
+            agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
+            degree += 10
+            root.update()
+            root.after(40)
+        
+        canvas.delete(agent)
+        agent_rotation -= 90
+        agent_img = ImageTk.PhotoImage(agent_img_src.rotate(-agent_rotation))
+        agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
+        
+    elif 'FORWARD' in action:
+        # while canvas.coords(agent)[0] != after[0]
+        step = 15
+        moveY = after[0] * CELL_SIZE / step
+        moveX = after[1] * CELL_SIZE / step
+        print('Current:', canvas.coords(agent))
+        print('Next:', after[0]*CELL_SIZE + PADDING_TOP, after[1]*CELL_SIZE + PADDING_LEFT)
+        for s in range(step):
+            canvas.move(agent, moveX, moveY)
+            root.update()
+            root.after(20)
+            
+        # canvas.delete(agent)
+        # canvas.moveto(agent, after[0]*CELL_SIZE + PADDING_TOP, after[1]*CELL_SIZE + PADDING_LEFT)
+        
+        
+    root.update()
+    # root.after(1000)
     
 def draw_layout():
     global ele_content_list
@@ -180,7 +251,7 @@ def draw_layout():
                 ele_img_list[i][j].append(canvas.create_text(j*CELL_SIZE + PADDING_LEFT/2.3, i*CELL_SIZE + PADDING_TOP - (text_height * len(content)/2) + id*text_height + 6, text=item, font=('Fira Sans Extra Condensed Bold', 14, 'bold'), anchor='w', fill=text_color))
                 # bbox = canvas.bbox(ele_img_list[i][j][-1])
                 # rect_item = canvas.create_rectangle(bbox, outline="white", fill="white")
-            print('End of cell')
+            # print('End of cell')
             # return
 
     

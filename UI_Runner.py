@@ -2,6 +2,7 @@ from Agent import Agent
 from Interface import Interface
 from Program import Program
 import UI
+import copy
 
 if __name__ == "__main__":
     program = Program('map1.txt', 'result1.txt')
@@ -17,12 +18,13 @@ if __name__ == "__main__":
     # state = [(2,1), "N", "GRAB_HEALING_POTION", 0, 100, 0]
     # agent.interface.log_state(state)
     
-    UI.grid = program.grid
-    UI.init()
+    UI.grid = copy.deepcopy(program.grid)
     agent.backtracking_search()
     print(program.states_log)
+    print('State size:', len(program.states_log))
     
     UI.states_log = program.states_log
+    UI.init()
     # UI.load_map('map1.txt')
     
     # program.display_grid()
