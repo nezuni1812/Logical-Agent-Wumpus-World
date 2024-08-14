@@ -410,7 +410,10 @@ class Agent:
                 break
         Path, gas_back = self.a_star_minimize_should_not_go((1, 1), self.current_position, self.explored_cells - self.gas_explored, self.gas_explored)
         Path.reverse()
-        print(Path)
+        Path.pop(0)
+        for cell in Path:
+            self.move_to_adj_cell(cell)
+   
 
     def find_closest_safe_cell(self, safe_cells):
         """Find the closest safe cell to the current position."""
