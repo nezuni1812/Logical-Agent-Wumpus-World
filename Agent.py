@@ -240,6 +240,7 @@ class Agent:
         state = [self.current_position, self.direction, 'SHOOT_WUMPUS', self.point, self.current_hp, self.heal_potions]
         self.interface.log_state(state)
         self.point -= 100
+        state[State.POINT.value] = self.point
         
         percepts = self.interface.get_percepts_after_shoot()
         self.process_symbol_xy ('W', 'S', self.current_position[0], self.current_position[1])
@@ -392,7 +393,7 @@ class Agent:
                     # If no move was made, backtrack
                     closest_safe_cell = self.find_closest_safe_cell(self.safe_cells - self.explored_cells)
                     if closest_safe_cell:
-                        path = self.bfs_path(self.current_position, closest_safe_cell)
+                        path = self.a_star_path(self.current_position, closest_safe_cell, self.safe_cells)
                         if path:
                             for step in path[1:]:  # Skip the first step as it's the current position
                                 self.move_to_adj_cell(step)
@@ -401,18 +402,27 @@ class Agent:
                             break
                     else:
                         self.explored_cells.add(self.current_position)
-                        print("Current cell: " + str(self.current_position) + " Total cells pass: " + str(len(self.explored_cells)))
                         print("No more safe cells to explore or backtrack to. Exploration complete.")
                         break
             else:
-                # No adjacent safe cells, backtrack or terminate
                 print("No more adjacent safe cells. Backtracking.")
                 break
+        
+        print("Current cell: " + str(self.current_position) + " Total cells pass: " + str(len(self.explored_cells)))
         Path, gas_back = self.a_star_minimize_should_not_go((1, 1), self.current_position, self.explored_cells - self.gas_explored, self.gas_explored)
         Path.reverse()
         Path.pop(0)
         for cell in Path:
             self.move_to_adj_cell(cell)
+            
+        if self.current_position == (1, 1):
+            state = [self.current_position, self.direction, 'CLIMB_OUT_OF_THE_CAVE', self.point, self.current_hp, self.heal_potions]
+            self.interface.log_state(state)
+            state[State.POINT.value] = self.point + 10
+            self.point = self.point + 10
+            state[State.EVENT.value] = ''
+            self.interface.log_state(state)
+        print("Total cells pass: " + str(len(self.explored_cells)))
    
 
     def find_closest_safe_cell(self, safe_cells):
@@ -483,24 +493,37 @@ class Agent:
                 adj_cell.append((row, col))
         return adj_cell
     
-    def bfs_path(self, start, goal):
-        
-        # Initialize the queue with the start position and the path taken so far
-        queue = deque([(start, [start])])
-        visited = set([start])  # Keep track of visited nodes
-        
-        while queue:
-            current, path = queue.popleft()
-            
-            # Check if we've reached the goal
+    def a_star_path(self, start, goal, safe_cells):
+        def heuristic(a, b):
+            return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+        open_set = []
+        heapq.heappush(open_set, (0, start))  # (priority, cell)
+        came_from = {}
+        g_score = {start: 0}
+        f_score = {start: heuristic(start, goal)}
+
+        while open_set:
+            current = heapq.heappop(open_set)[1]
             if current == goal:
+                # Reconstruct path
+                path = []
+                while current in came_from:
+                    path.append(current)
+                    current = came_from[current]
+                path.append(start)
+                path.reverse()
                 return path
-            
-            # Expand the neighbors
+
             for neighbor in self.get_adj_cell_from_position(current):
-                if neighbor in self.safe_cells and neighbor not in visited:
-                    visited.add(neighbor)
-                    queue.append((neighbor, path + [neighbor]))
+                if neighbor in safe_cells:
+                    tentative_g_score = g_score[current] + 1  # basic move cost
+
+                    if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
+                        came_from[neighbor] = current
+                        g_score[neighbor] = tentative_g_score
+                        f_score[neighbor] = tentative_g_score + heuristic(neighbor, goal)
+                        heapq.heappush(open_set, (f_score[neighbor], neighbor))
         
         return None  # Return None if no path is found
     
