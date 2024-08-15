@@ -31,13 +31,14 @@ class Agent:
         self.explored_cells = set()
         self.safe_cells = set()
         self.gas_explored = set()
+        self.map_size = self.interface.get_grid_size_for_agent()
 
     def get_adj_percept_cell(self, x, y):
         adj_cell = []
         for dx, dy in directions_vectors.values():
             row = x + dx
             col = y + dy
-            if 1 <= row <= 4 and 1 <= col <= 4:
+            if 1 <= row <= self.map_size and 1 <= col <= self.map_size:
                 adj_cell.append((row, col))
         
         return adj_cell
@@ -49,7 +50,7 @@ class Agent:
             d_x, d_y = directions_vectors[direction]
             row = x + d_x
             col = y + d_y
-            if 1 <= row <= 4 and 1 <= col <= 4:
+            if 1 <= row <= self.map_size and 1 <= col <= self.map_size:
                 adj_cell.append((row, col))
         return adj_cell
     
@@ -489,7 +490,7 @@ class Agent:
             d_x, d_y = directions_vectors[direction]
             row = x + d_x
             col = y + d_y
-            if 1 <= row <= 4 and 1 <= col <= 4:
+            if 1 <= row <= self.map_size and 1 <= col <= self.map_size:
                 adj_cell.append((row, col))
         return adj_cell
     

@@ -7,6 +7,9 @@ class Interface:
         self.output_file = program.output_file
         self.agent_cell = None
 
+    def get_grid_size_for_agent(self):
+        return self.program.grid_size
+
     def convert_wumpus_to_matrix(self, position):
         x, y = position
         return (self.program.grid_size - x, y - 1)
