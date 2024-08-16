@@ -239,7 +239,7 @@ def draw_layout():
                 elif item == 'Healer':
                     text_color = '#005008'
                 elif item == 'Gold':
-                    text_color = '#9D9700'
+                    text_color = '#857F00'
                 elif item == 'Pit':
                     text_color = 'black'
                 elif item == 'Poison':
