@@ -328,7 +328,7 @@ class Agent:
         
         return safe_adj_cell
     
-    def check_gas_cell(self, adj_cell):
+    def check_gas_cell2(self, adj_cell):
         if '~W_H' in self.current_percept:
             return adj_cell
         
@@ -343,6 +343,7 @@ class Agent:
             if gas_danger == True:
                 self.gas_explored.add((nx, ny))
                 self.KB.add_clause(gas_symbol)
+
                 if self.current_hp - 25 - (gas_back * 25) + self.heal_potions*25 >= 25:
                     safe_adj_cell.append((nx, ny))
             elif gas_safe:
@@ -353,14 +354,40 @@ class Agent:
             
         return safe_adj_cell
 
+    def check_gas_cell1(self, adj_cell):
+        if '~W_H' in self.current_percept:
+            return adj_cell
+        
+        safe_adj_cell = []
+
+        for nx, ny in adj_cell:
+            gas_symbol = symbols(f'P_G{nx}{ny}')
+            gas_safe = self.KB.infer(Not(gas_symbol))
+            gas_danger = self.KB.infer(gas_symbol)
+            
+            Path, gas_back = self.a_star_minimize_should_not_go((1, 1), self.current_position, self.explored_cells - self.gas_explored, self.gas_explored)
+            if gas_danger == True:
+                self.gas_explored.add((nx, ny))
+                self.KB.add_clause(gas_symbol)
+
+                # if self.current_hp - 25 - (gas_back * 25) + self.heal_potions*25 >= 25:
+                #     safe_adj_cell.append((nx, ny))
+            elif gas_safe:
+                safe_adj_cell.append((nx, ny))
+                self.KB.add_clause(Not(gas_symbol))
+            # elif gas_danger == False and gas_safe == False and self.current_hp - 25 - (gas_back * 25) + self.heal_potions*25 >= 25:
+            #     safe_adj_cell.append((nx, ny))
+            
+        return safe_adj_cell
+    
     def backtracking_search(self):
         while self.is_alive:
             self.do_in_percept()  # Handle the percepts at the current cell
-            if 'P_G' in self.current_percept:
-                Path_tmp, gas_back_tmp = self.a_star_minimize_should_not_go((1, 1), self.current_position, self.explored_cells - self.gas_explored, self.gas_explored)
-                if self.current_hp - ((gas_back_tmp + 1) * 25) + self.heal_potions*25 == 0:
-                    print("Return path")
-                    break
+            # if 'P_G' in self.current_percept:
+            #     Path_tmp, gas_back_tmp = self.a_star_minimize_should_not_go((1, 1), self.current_position, self.explored_cells - self.gas_explored, self.gas_explored)
+            #     if self.current_hp - ((gas_back_tmp + 1) * 25) + self.heal_potions*25 == 0:
+            #         print("Return path")
+            #         break
             if not self.is_alive:
                 print("Agent is dead. Exploration terminated.")
                 break
@@ -372,7 +399,7 @@ class Agent:
 
             self.perceive_current_cell()
             safe_pit_cells = self.check_pit_cell(adj_cell)
-            safe_gas_cells = self.check_gas_cell(adj_cell)
+            safe_gas_cells = self.check_gas_cell1(adj_cell)
             safe_wumpus_cells = self.check_wumpus_cell(adj_cell)
             
             adj_cell = self.get_adj_cell() #Vì có thể sau khi check wumpus, hướng của agent thay đổi 
@@ -409,11 +436,24 @@ class Agent:
                 print("No more adjacent safe cells. Backtracking.")
                 break
         
-        print("Current cell: " + str(self.current_position) + " Total cells pass: " + str(len(self.explored_cells)))
+        # print("Current cell: " + str(self.current_position) + " Total cells pass: " + str(len(self.explored_cells)))
+        
+        for gas_cell in self.gas_explored:
+            if gas_cell not in self.explored_cells:
+                Path, gas_back = self.a_star_minimize_should_not_go(self.current_position, gas_cell, self.explored_cells - self.gas_explored, self.gas_explored)
+                Path1, gas_back1 = self.a_star_minimize_should_not_go((1, 1), gas_cell, self.explored_cells - self.gas_explored, self.gas_explored)
+                if self.current_hp - 25 - ((gas_back + gas_back1) * 25) + self.heal_potions*25 >= 25:
+                    Path.pop(0)
+                    for cell in Path:
+                        self.do_in_percept()
+                        self.move_to_adj_cell(cell)
+                else:
+                    break
         Path, gas_back = self.a_star_minimize_should_not_go((1, 1), self.current_position, self.explored_cells - self.gas_explored, self.gas_explored)
         Path.reverse()
         Path.pop(0)
         for cell in Path:
+            self.do_in_percept()
             self.move_to_adj_cell(cell)
             
         if self.current_position == (1, 1):
@@ -425,6 +465,8 @@ class Agent:
             self.interface.log_state(state)
         print("Total cells pass: " + str(len(self.explored_cells)))
    
+    def sort_closest_cell(self, cells):
+        return sorted(cells, key=lambda x: abs(x[0] - self.current_position[0]) + abs(x[1] - self.current_position[1]))
 
     def find_closest_safe_cell(self, safe_cells):
         """Find the closest safe cell to the current position."""
