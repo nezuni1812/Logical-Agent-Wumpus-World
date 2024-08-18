@@ -274,33 +274,36 @@ class Agent:
         safe_adj_cell = []
 
         for nx, ny in adj_cell:
-            wumpus_symbol = symbols(f'W{nx}{ny}')
-            wumpus_safe = self.KB.infer(Not(wumpus_symbol))
-            wumpus_danger = self.KB.infer(wumpus_symbol)
-            
-            # print(nx, ny, wumpus_safe, wumpus_danger)
-            # self.KB.print_KB()
-
-            if wumpus_danger == True:
-                percepts = self.shoot_wumpus((nx, ny))
-                if '~S' in percepts:
-                    safe_adj_cell.extend(adj_cell)
-                    break
-                if '~SCREAM' in percepts:
-                    safe_adj_cell.append((nx, ny))
-                    
-            elif wumpus_safe == True:
+            if (nx, ny) in self.safe_cells:
                 safe_adj_cell.append((nx, ny))
-                self.process_symbol_xy('W', 'S', nx, ny)
-                self.KB.add_clause(Not(wumpus_symbol))
-            
-            elif wumpus_danger == False and wumpus_safe == False:
-                percepts = self.shoot_wumpus((nx, ny))
-                if '~S' in percepts:
-                    safe_adj_cell.extend(adj_cell)
-                    break
-                if '~SCREAM' in percepts:
+            else:
+                wumpus_symbol = symbols(f'W{nx}{ny}')
+                wumpus_safe = self.KB.infer(Not(wumpus_symbol))
+                wumpus_danger = self.KB.infer(wumpus_symbol)
+                
+                # print(nx, ny, wumpus_safe, wumpus_danger)
+                # self.KB.print_KB()
+
+                if wumpus_danger == True:
+                    percepts = self.shoot_wumpus((nx, ny))
+                    if '~S' in percepts:
+                        safe_adj_cell.extend(adj_cell)
+                        break
+                    if '~SCREAM' in percepts:
+                        safe_adj_cell.append((nx, ny))
+                        
+                elif wumpus_safe == True:
                     safe_adj_cell.append((nx, ny))
+                    self.process_symbol_xy('W', 'S', nx, ny)
+                    self.KB.add_clause(Not(wumpus_symbol))
+                
+                elif wumpus_danger == False and wumpus_safe == False:
+                    percepts = self.shoot_wumpus((nx, ny))
+                    if '~S' in percepts:
+                        safe_adj_cell.extend(adj_cell)
+                        break
+                    if '~SCREAM' in percepts:
+                        safe_adj_cell.append((nx, ny))
 
         return safe_adj_cell
 
@@ -311,20 +314,23 @@ class Agent:
         safe_adj_cell = []
 
         for nx, ny in adj_cell:
-            pit_symbol = symbols(f'P{nx}{ny}')
-            pit_safe = self.KB.infer(Not(pit_symbol))
-            pit_danger = self.KB.infer(pit_symbol)
-            
-            # print(nx, ny, pit_safe, pit_danger)
-            # self.KB.print_KB()
-
-            if pit_danger:
-                self.KB.add_clause(pit_symbol)
-            elif pit_safe:
+            if (nx, ny) in self.safe_cells:
                 safe_adj_cell.append((nx, ny))
-                self.KB.add_clause(Not(pit_symbol))
-            elif pit_danger == False and pit_safe == False:
-                continue
+            else:
+                pit_symbol = symbols(f'P{nx}{ny}')
+                pit_safe = self.KB.infer(Not(pit_symbol))
+                pit_danger = self.KB.infer(pit_symbol)
+                
+                # print(nx, ny, pit_safe, pit_danger)
+                # self.KB.print_KB()
+
+                if pit_danger:
+                    self.KB.add_clause(pit_symbol)
+                elif pit_safe:
+                    safe_adj_cell.append((nx, ny))
+                    self.KB.add_clause(Not(pit_symbol))
+                elif pit_danger == False and pit_safe == False:
+                    continue
         
         return safe_adj_cell
 
@@ -335,22 +341,24 @@ class Agent:
         safe_adj_cell = []
 
         for nx, ny in adj_cell:
-            gas_symbol = symbols(f'P_G{nx}{ny}')
-            gas_safe = self.KB.infer(Not(gas_symbol))
-            gas_danger = self.KB.infer(gas_symbol)
-            
-            Path, gas_back = self.a_star_minimize_should_not_go((1, 1), self.current_position, self.explored_cells - self.gas_explored, self.gas_explored)
-            if gas_danger == True:
-                self.gas_explored.add((nx, ny))
-                self.KB.add_clause(gas_symbol)
-
-                # if self.current_hp - 25 - (gas_back * 25) + self.heal_potions*25 >= 25:
-                #     safe_adj_cell.append((nx, ny))
-            elif gas_safe:
+            if (nx, ny) in self.safe_cells:
                 safe_adj_cell.append((nx, ny))
-                self.KB.add_clause(Not(gas_symbol))
-            # elif gas_danger == False and gas_safe == False and self.current_hp - 25 - (gas_back * 25) + self.heal_potions*25 >= 25:
-            #     safe_adj_cell.append((nx, ny))
+            else:
+                gas_symbol = symbols(f'P_G{nx}{ny}')
+                gas_safe = self.KB.infer(Not(gas_symbol))
+                gas_danger = self.KB.infer(gas_symbol)
+                
+                if gas_danger == True:
+                    self.gas_explored.add((nx, ny))
+                    self.KB.add_clause(gas_symbol)
+
+                    # if self.current_hp - 25 - (gas_back * 25) + self.heal_potions*25 >= 25:
+                    #     safe_adj_cell.append((nx, ny))
+                elif gas_safe:
+                    safe_adj_cell.append((nx, ny))
+                    self.KB.add_clause(Not(gas_symbol))
+                # elif gas_danger == False and gas_safe == False and self.current_hp - 25 - (gas_back * 25) + self.heal_potions*25 >= 25:
+                #     safe_adj_cell.append((nx, ny))
             
         return safe_adj_cell
     
