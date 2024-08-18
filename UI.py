@@ -110,6 +110,7 @@ def draw_path():
     global agent_rotation
     print('Running...', len(states_log))
     
+    # if state_index <= 100:
     global ele_img_list
     for row in ele_img_list:
         canvas.delete(row)
@@ -143,7 +144,7 @@ def draw_path():
             agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
             degree += 10
             root.update()
-            root.after(40)
+            root.after(10)
             
         canvas.delete(agent)
         agent_rotation += 90
@@ -160,7 +161,7 @@ def draw_path():
             agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
             degree += 10
             root.update()
-            root.after(40)
+            root.after(10)
         
         canvas.delete(agent)
         agent_rotation -= 90
@@ -180,11 +181,14 @@ def draw_path():
         for s in range(step):
             canvas.move(agent, moveX, moveY)
             root.update()
-            root.after(20)
+            root.after(5)
             
         # canvas.delete(agent)
         # canvas.moveto(agent, after[0]*CELL_SIZE + PADDING_TOP, after[1]*CELL_SIZE + PADDING_LEFT)
     elif 'SHOOT' in action:
+        canvas.delete(agent)
+        agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
+        destroy_wumpus(before[0], before[1], agent_rotation)
         # while canvas.coords(agent)[0] != after[0]
         # step = 15
         # canvas.delete(agent)
@@ -199,6 +203,12 @@ def draw_path():
         #     root.update()
         #     root.after(20)
         pass
+    elif 'SCREAM' in action:
+        canvas.delete(agent)
+        agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
+    elif 'NOTHING' in action:
+        canvas.delete(agent)
+        agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
         
     root.update()
     # root.after(1000)
@@ -221,6 +231,53 @@ def draw_text(heading = None, step = None, more = None, other = None):
         if text_list[3] is not None:
             canvas.delete(text_list[3])
         text_list[3] = canvas.create_text(960, 110, text=other, anchor='nw', font=('Fira Sans Extra Condensed', 16))
+    
+def is_close_to_wumpus(i, j):
+    global grid
+    for x in range(i-1, i+2):
+        for y in range(j-1, j+2):
+            if x >= 0 and x < len(grid) and y >= 0 and y < len(grid[0]) and (x == i or y == j):
+                if '1' in grid[x][y]:
+                    return True
+    return False
+    
+def destroy_wumpus(row, col, degree):
+    global grid
+    if degree % 360 == 0:
+        draw_text(other='^')
+        for i in range(row, -1, -1):
+            if '1' in grid[i][col]:
+                row = i
+                break
+    elif degree % 360 == 90:
+        draw_text(other='>')
+        for i in range(col, len(grid[0])):
+            if '1' in grid[row][i]:
+                col = i
+                break
+    elif degree % 360 == 180:
+        draw_text(other='v')
+        for i in range(row, len(grid)):
+            if '1' in grid[i][col]:
+                row = i
+                break
+    elif degree % 360 == 270:
+        draw_text(other='<')
+        for i in range(col, -1, -1):
+            if '1' in grid[row][i]:
+                col = i
+                break
+        
+    if '1' in grid[row][col]:
+        print('Remove wumpus at:', row, col)
+        grid[row][col] = grid[row][col].replace('1', '', 1)
+        for i in range(row-1, row+2):
+            for j in range(col-1, col+2):
+                if i >= 0 and i < len(grid) and j >= 0 and j < len(grid[0]):
+                    if '5' in grid[i][j] and not is_close_to_wumpus(i, j):
+                        grid[i][j] = grid[i][j].replace('5', '', 1)
+        return True
+    return False
     
 def draw_layout():
     global ele_content_list
