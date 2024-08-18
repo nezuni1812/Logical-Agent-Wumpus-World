@@ -453,6 +453,7 @@ class Agent:
             self.point = self.point + 10
             state[State.EVENT.value] = ''
             self.interface.log_state(state)
+        self.interface.write_to_output_file()
         print("Total cells pass: " + str(len(self.explored_cells)))
 
     def find_closest_cell(self, list_cells):

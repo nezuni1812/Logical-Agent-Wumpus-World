@@ -6,6 +6,7 @@ class Interface:
         self.program = program
         self.output_file = program.output_file
         self.agent_cell = None
+        self.agent_states_log = []
 
     def get_grid_size_for_agent(self):
         return self.program.grid_size
@@ -32,15 +33,14 @@ class Interface:
         return None
 
     def log_state(self, state):
-        print(state)
+        # print(state)
         state_str = (f"Position: {state[State.POSITION.value]} "
                     f"Direction: {state[State.DIRECTION.value]} "
                     f"Action: {state[State.EVENT.value]} "
                     f"Point: {state[State.POINT.value]} "
                     f"HP: {state[State.HP.value]} "
                     f"Heal_Potions: {state[State.HEAL_POTIONS.value]}")
-        with open(self.output_file, 'a') as file:
-            file.write(state_str + '\n')
+        self.agent_states_log.append(state_str)
             
         internal_state = state.copy()
         internal_state[State.POSITION.value] = self.convert_wumpus_to_matrix(state[State.POSITION.value])
@@ -58,3 +58,9 @@ class Interface:
 
     def get_grid_size(self):
         return self.program.grid_size
+    
+    def write_to_output_file(self):
+        with open(self.output_file, 'w') as f:
+            for state in self.agent_states_log:
+                f.write(state + '\n')
+            f.write('\n')
