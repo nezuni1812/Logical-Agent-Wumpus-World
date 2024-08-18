@@ -193,6 +193,10 @@ def draw_path():
         canvas.delete(agent)
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
         take_gold(before[0], before[1])
+    elif 'GRAB_HEALING_POTION' in action:
+        canvas.delete(agent)
+        agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
+        take_heal(before[0], before[1])
     elif 'SCREAM' in action:
         canvas.delete(agent)
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
@@ -222,13 +226,26 @@ def draw_text(heading = None, step = None, more = None, other = None):
             canvas.delete(text_list[3])
         text_list[3] = canvas.create_text(960, 110, text=other, anchor='nw', font=('Fira Sans Extra Condensed', 16))
     
-def is_close_to_wumpus(i, j):
+def is_close_to_wumpus(i, j, target):
     global grid
     for x in range(i-1, i+2):
         for y in range(j-1, j+2):
             if x >= 0 and x < len(grid) and y >= 0 and y < len(grid[0]) and (x == i or y == j):
-                if '1' in grid[x][y]:
+                if target in grid[x][y]:
                     return True
+    return False
+    
+def take_heal(row, col):
+    global grid
+    if '4' in grid[row][col]:
+        print('Remove healer at:', row, col)
+        grid[row][col] = grid[row][col].replace('4', '', 1)
+        for i in range(row-1, row+2):
+            for j in range(col-1, col+2):
+                if i >= 0 and i < len(grid) and j >= 0 and j < len(grid[0]):
+                    if '8' in grid[i][j] and not is_close_to_wumpus(i, j, '4'):
+                        grid[i][j] = grid[i][j].replace('8', '', 1)
+        return True
     return False
     
 def destroy_wumpus(row, col, degree):
@@ -264,7 +281,7 @@ def destroy_wumpus(row, col, degree):
         for i in range(row-1, row+2):
             for j in range(col-1, col+2):
                 if i >= 0 and i < len(grid) and j >= 0 and j < len(grid[0]):
-                    if '5' in grid[i][j] and not is_close_to_wumpus(i, j):
+                    if '5' in grid[i][j] and not is_close_to_wumpus(i, j, '1'):
                         grid[i][j] = grid[i][j].replace('5', '', 1)
         return True
     return False
