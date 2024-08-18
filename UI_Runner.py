@@ -5,7 +5,7 @@ import UI
 import copy
 
 if __name__ == "__main__":
-    program = Program('map1.txt', 'result1.txt')
+    program = Program('mapsimp.txt', 'result1.txt')
     interface = Interface(program)
     agent = Agent(interface)
     # print(agent.perceive_current_cell())
