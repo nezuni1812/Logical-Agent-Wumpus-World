@@ -15,20 +15,21 @@ windll.shcore.SetProcessDpiAwareness(1)
 pyglet.font.add_file('resource/FiraSansExtraCondensed-Bold.ttf')
 
 states_log = []
+grid_log = []
 grid = []
 canvas_object_map = []
 ele_img_list = list[list[list]]
 ele_content_list: list[list[list]]
 img_list = []
 
-state_index = 0
+state_index = -1
 
 PADDING_TOP = 55
 PADDING_LEFT = 75
 CELL_SIZE = 88.5 # pixels
 
 def init():
-    root.geometry('1064x900+-4+50')
+    root.geometry('1464x900+-4+50')
     root.configure(background='#EBE4FA')
     
     canvas.pack(fill='both', expand=True)
@@ -46,6 +47,8 @@ def init():
     # draw_path()
     global state_index
     root.bind("<Right>", lambda *args: next())
+    draw_text('Hell world')
+    draw_path()
     # root.bind("<Left>", lambda *args: prev())
     # wum_img = ImageTk.PhotoImage(Image.open("resource/wumpus.png"))
     # wum = canvas.create_image(0, 0, image=wum_img, anchor='center')
@@ -107,12 +110,25 @@ def draw_path():
     global agent_rotation
     print('Running...', len(states_log))
     
-    state = states_log[state_index]
+    global ele_img_list
+    for row in ele_img_list:
+        canvas.delete(row)
+    draw_layout()
+    
+    if state_index != -1:
+        state = states_log[state_index]
+    else:
+        if agent is None:
+            agent = canvas.create_image(0*CELL_SIZE + PADDING_LEFT, 9*CELL_SIZE + PADDING_TOP, image=agent_img)
+        root.update()
+        return
         
     print(state)
     before = state[0]
     after = state[1]
     action = state[2]
+    
+    draw_text(step=f'{state_index}. {action.replace("_", " ")}', other=f'Before: {before}, After: {after}', more=f'HP: {state[3]}')
     
     if agent is None:
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
@@ -154,6 +170,9 @@ def draw_path():
     elif 'FORWARD' in action:
         # while canvas.coords(agent)[0] != after[0]
         step = 15
+        canvas.delete(agent)
+        agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
+        
         moveY = after[0] * CELL_SIZE / step
         moveX = after[1] * CELL_SIZE / step
         print('Current:', canvas.coords(agent))
@@ -165,16 +184,60 @@ def draw_path():
             
         # canvas.delete(agent)
         # canvas.moveto(agent, after[0]*CELL_SIZE + PADDING_TOP, after[1]*CELL_SIZE + PADDING_LEFT)
+    elif 'SHOOT' in action:
+        # while canvas.coords(agent)[0] != after[0]
+        # step = 15
+        # canvas.delete(agent)
+        # agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
         
+        # moveY = after[0] * CELL_SIZE / step
+        # moveX = after[1] * CELL_SIZE / step
+        # print('Current:', canvas.coords(agent))
+        # print('Next:', after[0]*CELL_SIZE + PADDING_TOP, after[1]*CELL_SIZE + PADDING_LEFT)
+        # for s in range(step):
+        #     canvas.move(agent, moveX, moveY)
+        #     root.update()
+        #     root.after(20)
+        pass
         
     root.update()
     # root.after(1000)
     
+text_list = [None, None, None, None]
+def draw_text(heading = None, step = None, more = None, other = None):
+    if heading is not None:
+        if text_list[0] is not None:
+            canvas.delete(text_list[0])
+        text_list[0] = canvas.create_text(960, 10, text=heading, anchor='nw', font=('Fira Sans Extra Condensed', 28))
+    if step is not None:
+        if text_list[1] is not None:
+            canvas.delete(text_list[1])
+        text_list[1] = canvas.create_text(960, 60, text=step, anchor='nw', font=('Fira Sans Extra Condensed', 18))
+    if more is not None:
+        if text_list[2] is not None:
+            canvas.delete(text_list[2])
+        text_list[2] = canvas.create_text(960, 90, text=more, anchor='nw', font=('Fira Sans Extra Condensed', 16))
+    if other is not None:
+        if text_list[3] is not None:
+            canvas.delete(text_list[3])
+        text_list[3] = canvas.create_text(960, 110, text=other, anchor='nw', font=('Fira Sans Extra Condensed', 16))
+    
 def draw_layout():
     global ele_content_list
+    global state_index
+    global ele_img_list
+    
+    # ele_content_list[:][:].clear()
+    ele_content_list = [[[] for j in range(len(grid[0]))] for i in range(len(grid))]
+    current_grid = []
+    current_grid = grid
     # print(len(ele_content_list), len(ele_content_list[0]))
     # return
-    for i, row in enumerate(grid):
+    print("Current layout")
+    for row in current_grid:
+        print(row)
+        
+    for i, row in enumerate(current_grid):
         for j, cell in enumerate(row):
             cell_content = sorted(cell, reverse=True)
             # print('Cell content:', cell_content)
@@ -182,7 +245,6 @@ def draw_layout():
                 img = None
                 per_size = 96
                 if cell_content[0] == '4':
-                    print('Heal')
                     ele_content_list[i][j].append('Healer')
                     # print(ele_content_list)
                     # print('-----------')
@@ -190,38 +252,30 @@ def draw_layout():
                     # ele_img_list[i][j].append(tet)
                     # img = ImageTk.PhotoImage(Image.open("resource/heal.png").resize((46, 46)))
                 elif cell_content[0] == '1':
-                    print('Wumpus')
                     ele_content_list[i][j].append('Wumpus')
                     # img = ImageTk.PhotoImage(Image.open("resource/wumpus.png").resize((46, 46)))
                 elif cell_content[0] == '2':
-                    print('Pit')
                     ele_content_list[i][j].append('Pit')
                     # img = ImageTk.PhotoImage(Image.open("resource/pit.png").resize((46, 46)))
                 elif cell_content[0] == '3':
-                    print('Poison')
                     ele_content_list[i][j].append('Poison')
                     # img = ImageTk.PhotoImage(Image.open("resource/poison.png").resize((46, 46)))
                 elif cell_content[0] == '9':
-                    print('Gold')
                     ele_content_list[i][j].append('Gold')
                     # img = ImageTk.PhotoImage(Image.open("resource/gold.png").resize((46, 46)))
                 # Percepts
                 elif cell_content[0] == '5':
-                    print('Stench')
                     img = ImageTk.PhotoImage(Image.open("resource/stench.png").resize((per_size, per_size)))
                 elif cell_content[0] == '6':
-                    print('Breeze')
                     img = ImageTk.PhotoImage(Image.open("resource/breeze.png").resize((per_size, per_size)))    
                 elif cell_content[0] == '7':
-                    print('Whiff')
                     img = ImageTk.PhotoImage(Image.open("resource/whiff.png").resize((per_size, per_size)))
                 elif cell_content[0] == '8':
-                    print('Glitter')
                     img = ImageTk.PhotoImage(Image.open("resource/glitter.png").resize((per_size + 35, per_size + 35)))
                     
                 if img is not None:
                     img_list.append(img)
-                    canvas.create_image(j*CELL_SIZE + PADDING_LEFT, i*CELL_SIZE + PADDING_TOP, image=img)
+                    ele_img_list.append(canvas.create_image(j*CELL_SIZE + PADDING_LEFT, i*CELL_SIZE + PADDING_TOP, image=img))
                 
                 
                 cell_content = cell_content[1:len(cell_content)]
@@ -248,7 +302,7 @@ def draw_layout():
                 if item == 'Wumpus' and wumpus_count > 1:
                     item = item + ' ' + str(wumpus_count) + 'x'
                 
-                ele_img_list[i][j].append(canvas.create_text(j*CELL_SIZE + PADDING_LEFT/2.3, i*CELL_SIZE + PADDING_TOP - (text_height * len(content)/2) + id*text_height + 6, text=item, font=('Fira Sans Extra Condensed Bold', 14, 'bold'), anchor='w', fill=text_color))
+                ele_img_list.append(canvas.create_text(j*CELL_SIZE + PADDING_LEFT/2.3, i*CELL_SIZE + PADDING_TOP - (text_height * len(content)/2) + id*text_height + 6, text=item, font=('Fira Sans Extra Condensed Bold', 14, 'bold'), anchor='w', fill=text_color))
                 # bbox = canvas.bbox(ele_img_list[i][j][-1])
                 # rect_item = canvas.create_rectangle(bbox, outline="white", fill="white")
             # print('End of cell')
