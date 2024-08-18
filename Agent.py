@@ -57,19 +57,17 @@ class Agent:
     def process_symbol_xy(self, pos_symbol, neg_symbol, x, y):
         negated_pos_xy = symbols(f'{pos_symbol}{x}{y}')
         inferred = self.KB.infer(negated_pos_xy) # Check if ~pos_symbol_xy can be inferred
-        # print(negated_pos_xy, inferred)
+
         if inferred:
             neighbors = self.get_adj_percept_cell(x, y)  # Get the adjacent cells based on the current position and direction
             for nx, ny in neighbors:
                 neg_symbol_xy = symbols(f'{neg_symbol}{nx}{ny}')
-                if self.KB.infer(neg_symbol_xy):  # Check if neg_symbol is inferred in the neighbor
-                    # Get the neighbors of (nx, ny)
+                if self.KB.infer(neg_symbol_xy):
                     adj_neighbors = self.get_adj_percept_cell(nx, ny)
 
-                    # Create the Or(pos_symbol...) clause for neg_symbol_xy
                     pos_literals = [symbols(f'{pos_symbol}{adj_x}{adj_y}') for adj_x, adj_y in adj_neighbors]
                     neg_clause = Or(*pos_literals)
-                    # Check the other three cells for ~pos_symbol
+  
                     all_others_negated = True
                     for adj_x, adj_y in neighbors:
                         if adj_x == x and adj_y == y:
@@ -82,7 +80,6 @@ class Agent:
                     
                     # If the negation condition for the other three cells is met, remove clauses
                     if all_others_negated:
-                        # print(2, neg_clause, neg_symbol_xy)
                         self.KB.delete_clause(neg_clause)  # Remove the Or(pos_symbol...) clause
                         self.KB.delete_clause(neg_symbol_xy)  # Remove neg_symbol from the KB   
                          
@@ -245,7 +242,6 @@ class Agent:
         
         percepts = self.interface.get_percepts_after_shoot()
         self.process_symbol_xy ('W', 'S', self.current_position[0], self.current_position[1])
-        # print(percepts)
         if 'SCREAM' in percepts:
             state[State.EVENT.value] = 'HEARD_SCREAM'
             self.interface.log_state(state)
@@ -264,19 +260,17 @@ class Agent:
             self.KB.delete_clause(symbols(f'S{self.current_position[0]}{self.current_position[1]}'))
             
             neighbors = self.get_adj_cell() 
-            neighbor_literals = [symbols(f'W{x}{y}') for x, y in neighbors]
-            percept_symbol = And(*neighbor_literals) 
-            self.KB.add_clause(Not(symbols(f'W{target_position[0]}{target_position[1]}')))
-            self.process_symbol_xy('W', 'S', target_position[0], target_position[1])
-            self.KB.delete_clause(symbols(f'W{target_position[0]}{target_position[1]}'))
+            for x, y in neighbors:
+                self.KB.add_clause(Not(symbols(f'W{x}{y}')))
+                self.KB.delete_clause(symbols(f'W{x}{y}'))
+                self.process_symbol_xy('W', 'S', x, y)
 
         return percepts
             
     def check_wumpus_cell(self, adj_cell):
-        self.perceive_current_cell()
         if '~S' in self.current_percept:
             return adj_cell
-
+        
         safe_adj_cell = []
 
         for nx, ny in adj_cell:
@@ -290,15 +284,21 @@ class Agent:
             if wumpus_danger == True:
                 percepts = self.shoot_wumpus((nx, ny))
                 if '~S' in percepts:
+                    safe_adj_cell.extend(adj_cell)
+                    break
+                if '~SCREAM' in percepts:
                     safe_adj_cell.append((nx, ny))
                     
-            elif wumpus_safe:
+            elif wumpus_safe == True:
                 safe_adj_cell.append((nx, ny))
                 self.process_symbol_xy('W', 'S', nx, ny)
                 self.KB.add_clause(Not(wumpus_symbol))
             
             elif wumpus_danger == False and wumpus_safe == False:
                 percepts = self.shoot_wumpus((nx, ny))
+                if '~S' in percepts:
+                    safe_adj_cell.extend(adj_cell)
+                    break
                 if '~SCREAM' in percepts:
                     safe_adj_cell.append((nx, ny))
 
@@ -307,7 +307,6 @@ class Agent:
     def check_pit_cell(self, adj_cell):
         if '~B' in self.current_percept:
             return adj_cell
-        self.perceive_current_cell()
         
         safe_adj_cell = []
 
@@ -332,7 +331,6 @@ class Agent:
     def check_gas_cell(self, adj_cell):
         if '~W_H' in self.current_percept:
             return adj_cell
-        self.perceive_current_cell()
         
         safe_adj_cell = []
 
@@ -343,6 +341,7 @@ class Agent:
             
             Path, gas_back = self.a_star_minimize_should_not_go((1, 1), self.current_position, self.explored_cells - self.gas_explored, self.gas_explored)
             if gas_danger == True:
+                self.gas_explored.add((nx, ny))
                 self.KB.add_clause(gas_symbol)
                 if self.current_hp - 25 - (gas_back * 25) + self.heal_potions*25 >= 25:
                     safe_adj_cell.append((nx, ny))
@@ -360,6 +359,7 @@ class Agent:
             if 'P_G' in self.current_percept:
                 Path_tmp, gas_back_tmp = self.a_star_minimize_should_not_go((1, 1), self.current_position, self.explored_cells - self.gas_explored, self.gas_explored)
                 if self.current_hp - ((gas_back_tmp + 1) * 25) + self.heal_potions*25 == 0:
+                    print("Return path")
                     break
             if not self.is_alive:
                 print("Agent is dead. Exploration terminated.")
@@ -370,6 +370,7 @@ class Agent:
             
             adj_cell = self.get_adj_cell()
 
+            self.perceive_current_cell()
             safe_pit_cells = self.check_pit_cell(adj_cell)
             safe_gas_cells = self.check_gas_cell(adj_cell)
             safe_wumpus_cells = self.check_wumpus_cell(adj_cell)
@@ -382,7 +383,6 @@ class Agent:
             for cell in safe_adj_cells:
                 self.safe_cells.add(cell)
 
-                
             if safe_adj_cells:
                 moved = False
                 for cell in safe_adj_cells:
