@@ -115,7 +115,10 @@ def draw_path():
     global agent_rotation
     print('Running...', len(states_log))
     
-    # if state_index <= 100:
+    if state_index >= len(states_log):
+        draw_text(heading='Game over!')
+        return
+    
     global ele_img_list
     for row in ele_img_list:
         canvas.delete(row)
@@ -137,7 +140,7 @@ def draw_path():
     after = state[1]
     action = state[2]
     
-    draw_text(step=f'{state_index}. {action.replace("_", " ")}', more=f'Point: {state[3]}')
+    draw_text(step=f'{state_index}. {action.replace("_", " ")}', more=f'Point: {state[3]}, HP: {state[4]}, Heal Potions left: {state[5]}')
     
     if agent is None:
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
@@ -207,12 +210,16 @@ def draw_path():
         canvas.delete(agent)
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
         take_heal(before[0], before[1])
+    elif 'USE_HEALING_POTION' in action:
+        canvas.delete(agent)
+        agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
     elif 'SCREAM' in action:
         canvas.delete(agent)
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
     elif 'NOTHING' in action:
         canvas.delete(agent)
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
+    
         
     root.update()
     # root.after(1000)
@@ -261,25 +268,21 @@ def take_heal(row, col):
 def destroy_wumpus(row, col, degree):
     global grid
     if degree % 360 == 0:
-        draw_text(other='^')
         for i in range(row, -1, -1):
             if '1' in grid[i][col]:
                 row = i
                 break
     elif degree % 360 == 90:
-        draw_text(other='>')
         for i in range(col, len(grid[0])):
             if '1' in grid[row][i]:
                 col = i
                 break
     elif degree % 360 == 180:
-        draw_text(other='v')
         for i in range(row, len(grid)):
             if '1' in grid[i][col]:
                 row = i
                 break
     elif degree % 360 == 270:
-        draw_text(other='<')
         for i in range(col, -1, -1):
             if '1' in grid[row][i]:
                 col = i
