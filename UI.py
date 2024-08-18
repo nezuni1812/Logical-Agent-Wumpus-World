@@ -189,20 +189,10 @@ def draw_path():
         canvas.delete(agent)
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
         destroy_wumpus(before[0], before[1], agent_rotation)
-        # while canvas.coords(agent)[0] != after[0]
-        # step = 15
-        # canvas.delete(agent)
-        # agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
-        
-        # moveY = after[0] * CELL_SIZE / step
-        # moveX = after[1] * CELL_SIZE / step
-        # print('Current:', canvas.coords(agent))
-        # print('Next:', after[0]*CELL_SIZE + PADDING_TOP, after[1]*CELL_SIZE + PADDING_LEFT)
-        # for s in range(step):
-        #     canvas.move(agent, moveX, moveY)
-        #     root.update()
-        #     root.after(20)
-        pass
+    elif 'GOLD' in action:
+        canvas.delete(agent)
+        agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
+        take_gold(before[0], before[1])
     elif 'SCREAM' in action:
         canvas.delete(agent)
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
@@ -278,6 +268,18 @@ def destroy_wumpus(row, col, degree):
                         grid[i][j] = grid[i][j].replace('5', '', 1)
         return True
     return False
+
+def take_gold(row, col):
+    global grid
+    if '9' in grid[row][col]:
+        print('Remove gold at:', row, col)
+        grid[row][col] = grid[row][col].replace('9', '', 1)
+        for i in range(row-1, row+2):
+            for j in range(col-1, col+2):
+                if i >= 0 and i < len(grid) and j >= 0 and j < len(grid[0]):
+                    if '9' in grid[i][j] and not is_close_to_wumpus(i, j):
+                        grid[i][j] = grid[i][j].replace('9', '', 1)
+    pass
     
 def draw_layout():
     global ele_content_list
