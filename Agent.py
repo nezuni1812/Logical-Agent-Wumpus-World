@@ -327,34 +327,8 @@ class Agent:
                 continue
         
         return safe_adj_cell
-    
-    def check_gas_cell2(self, adj_cell):
-        if '~W_H' in self.current_percept:
-            return adj_cell
-        
-        safe_adj_cell = []
 
-        for nx, ny in adj_cell:
-            gas_symbol = symbols(f'P_G{nx}{ny}')
-            gas_safe = self.KB.infer(Not(gas_symbol))
-            gas_danger = self.KB.infer(gas_symbol)
-            
-            Path, gas_back = self.a_star_minimize_should_not_go((1, 1), self.current_position, self.explored_cells - self.gas_explored, self.gas_explored)
-            if gas_danger == True:
-                self.gas_explored.add((nx, ny))
-                self.KB.add_clause(gas_symbol)
-
-                if self.current_hp - 25 - (gas_back * 25) + self.heal_potions*25 >= 25:
-                    safe_adj_cell.append((nx, ny))
-            elif gas_safe:
-                safe_adj_cell.append((nx, ny))
-                self.KB.add_clause(Not(gas_symbol))
-            elif gas_danger == False and gas_safe == False and self.current_hp - 25 - (gas_back * 25) + self.heal_potions*25 >= 25:
-                safe_adj_cell.append((nx, ny))
-            
-        return safe_adj_cell
-
-    def check_gas_cell1(self, adj_cell):
+    def check_gas_cell(self, adj_cell):
         if '~W_H' in self.current_percept:
             return adj_cell
         
@@ -399,7 +373,7 @@ class Agent:
 
             self.perceive_current_cell()
             safe_pit_cells = self.check_pit_cell(adj_cell)
-            safe_gas_cells = self.check_gas_cell1(adj_cell)
+            safe_gas_cells = self.check_gas_cell(adj_cell)
             safe_wumpus_cells = self.check_wumpus_cell(adj_cell)
             
             adj_cell = self.get_adj_cell() #Vì có thể sau khi check wumpus, hướng của agent thay đổi 
@@ -449,6 +423,7 @@ class Agent:
                     for cell in Path:
                         self.do_in_percept()
                         self.move_to_adj_cell(cell)
+                        self.explored_cells.add(cell)
                     
                     self.gas_passed.remove(gas_cell)
                 else:
@@ -457,7 +432,6 @@ class Agent:
                 self.gas_passed.remove(gas_cell)
                 
         Path, gas_back = self.a_star_minimize_should_not_go((1, 1), self.current_position, self.explored_cells - self.gas_explored, self.gas_explored)
-        print("chay toi day")
         Path.reverse()
         Path.pop(0)
         for cell in Path:
@@ -472,9 +446,6 @@ class Agent:
             state[State.EVENT.value] = ''
             self.interface.log_state(state)
         print("Total cells pass: " + str(len(self.explored_cells)))
-   
-    def sort_closest_cell(self, cells):
-        return sorted(cells, key=lambda x: abs(x[0] - self.current_position[0]) + abs(x[1] - self.current_position[1]))
 
     def find_closest_cell(self, list_cells):
         min_distance = int(1e9)
