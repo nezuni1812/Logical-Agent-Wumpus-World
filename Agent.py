@@ -419,7 +419,7 @@ class Agent:
                         break
                 if not moved:
                     # If no move was made, backtrack
-                    closest_safe_cell = self.find_closest_safe_cell(self.safe_cells - self.explored_cells)
+                    closest_safe_cell = self.find_closest_cell(self.safe_cells - self.explored_cells)
                     if closest_safe_cell:
                         path = self.a_star_path(self.current_position, closest_safe_cell, self.safe_cells)
                         if path:
@@ -436,20 +436,28 @@ class Agent:
                 print("No more adjacent safe cells. Backtracking.")
                 break
         
-        # print("Current cell: " + str(self.current_position) + " Total cells pass: " + str(len(self.explored_cells)))
-        
-        for gas_cell in self.gas_explored:
+        print("Current cell: " + str(self.current_position) + " Total cells pass: " + str(len(self.explored_cells)))
+        self.gas_passed = set(self.gas_explored)
+        while len(self.gas_passed) > 0:
+            gas_cell = self.find_closest_cell(list(self.gas_passed))
+
             if gas_cell not in self.explored_cells:
                 Path, gas_back = self.a_star_minimize_should_not_go(self.current_position, gas_cell, self.explored_cells - self.gas_explored, self.gas_explored)
                 Path1, gas_back1 = self.a_star_minimize_should_not_go((1, 1), gas_cell, self.explored_cells - self.gas_explored, self.gas_explored)
-                if self.current_hp - 25 - ((gas_back + gas_back1) * 25) + self.heal_potions*25 >= 25:
+                if self.current_hp - 25 - ((gas_back + gas_back1) * 25) + self.heal_potions * 25 >= 25:
                     Path.pop(0)
                     for cell in Path:
                         self.do_in_percept()
                         self.move_to_adj_cell(cell)
+                    
+                    self.gas_passed.remove(gas_cell)
                 else:
                     break
+            else:
+                self.gas_passed.remove(gas_cell)
+                
         Path, gas_back = self.a_star_minimize_should_not_go((1, 1), self.current_position, self.explored_cells - self.gas_explored, self.gas_explored)
+        print("chay toi day")
         Path.reverse()
         Path.pop(0)
         for cell in Path:
@@ -468,11 +476,10 @@ class Agent:
     def sort_closest_cell(self, cells):
         return sorted(cells, key=lambda x: abs(x[0] - self.current_position[0]) + abs(x[1] - self.current_position[1]))
 
-    def find_closest_safe_cell(self, safe_cells):
-        """Find the closest safe cell to the current position."""
+    def find_closest_cell(self, list_cells):
         min_distance = int(1e9)
         closest_cell = None
-        for cell in safe_cells:
+        for cell in list_cells:
             distance = abs(cell[0] - self.current_position[0]) + abs(cell[1] - self.current_position[1])
             if distance < min_distance:
                 min_distance = distance
