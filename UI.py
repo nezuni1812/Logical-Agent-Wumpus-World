@@ -17,6 +17,7 @@ pyglet.font.add_file('resource/FiraSansExtraCondensed-Bold.ttf')
 states_log = []
 grid_log = []
 grid = []
+visited_grid = []
 canvas_object_map = []
 ele_img_list = list[list[list]]
 ele_content_list: list[list[list]]
@@ -29,6 +30,7 @@ PADDING_LEFT = 75
 CELL_SIZE = 88.5 # pixels
 
 def init():
+    global grid
     root.geometry('1464x900+-4+50')
     root.configure(background='#EBE4FA')
     
@@ -39,6 +41,9 @@ def init():
     
     global ele_content_list
     global ele_img_list
+    global visited_grid
+    print('Grid size', len(grid), len(grid[0]))
+    visited_grid = [[False for j in range(len(grid[0]))] for i in range(len(grid))]
     ele_img_list = [[[] for j in range(len(grid[0]))] for i in range(len(grid))]
     ele_content_list = [[[] for j in range(len(grid[0]))] for i in range(len(grid))]
     
@@ -115,12 +120,15 @@ def draw_path():
     for row in ele_img_list:
         canvas.delete(row)
     draw_layout()
+    draw_unvisited()
     
     if state_index != -1:
         state = states_log[state_index]
     else:
         if agent is None:
             agent = canvas.create_image(0*CELL_SIZE + PADDING_LEFT, 9*CELL_SIZE + PADDING_TOP, image=agent_img)
+        visited_grid[9][0] = True
+        draw_unvisited()
         root.update()
         return
         
@@ -129,7 +137,7 @@ def draw_path():
     after = state[1]
     action = state[2]
     
-    draw_text(step=f'{state_index}. {action.replace("_", " ")}', other=f'Before: {before}, After: {after}', more=f'HP: {state[3]}')
+    draw_text(step=f'{state_index}. {action.replace("_", " ")}', more=f'Point: {state[3]}')
     
     if agent is None:
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
@@ -183,6 +191,8 @@ def draw_path():
             root.update()
             root.after(5)
             
+        visited_grid[before[0] + after[0]][before[1] + after[1]] = True
+        draw_unvisited()
         # canvas.delete(agent)
         # canvas.moveto(agent, after[0]*CELL_SIZE + PADDING_TOP, after[1]*CELL_SIZE + PADDING_LEFT)
     elif 'SHOOT' in action:
@@ -297,6 +307,20 @@ def take_gold(row, col):
                     if '9' in grid[i][j] and not is_close_to_wumpus(i, j):
                         grid[i][j] = grid[i][j].replace('9', '', 1)
     pass
+    
+unvisited_img = img = ImageTk.PhotoImage(Image.open("resource/blur.png").resize((78, 78)))
+unvisited_block = []
+
+def draw_unvisited():
+    global visited_grid
+    for i in unvisited_block:
+        canvas.delete(i)
+        
+    for i in range(len(visited_grid)):
+        for j in range(len(visited_grid[0])):
+            if not visited_grid[i][j]:
+                unvisited_block.append(canvas.create_image(j*CELL_SIZE + PADDING_LEFT - 2, i*CELL_SIZE + PADDING_TOP - 2, image=unvisited_img, anchor='center'))
+    
     
 def draw_layout():
     global ele_content_list
