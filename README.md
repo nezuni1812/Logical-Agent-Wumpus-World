@@ -34,6 +34,6 @@ There are several input files to choose from. Their names are:
 `map1.txt`\
 `map2.txt`\
 ...\
-`map9.txt`\
+`map8.txt`\
 
 User can directly edit the input file name in the `main.py` file by commenting and uncommenting which file the `Program` should take.
