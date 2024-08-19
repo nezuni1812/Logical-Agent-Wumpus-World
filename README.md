@@ -27,3 +27,13 @@ Then we run the program with Python.
 ```bash
 python main.py
 ```
+
+# Changing map inputs
+There are several input files to choose from. Their names are:
+
+`map1.txt`\
+`map2.txt`\
+...\
+`map9.txt`\
+
+User can directly edit the input file name in the `main.py` file by commenting and uncommenting which file the `Program` should take.

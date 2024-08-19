@@ -5,8 +5,6 @@ from tkinter import ttk
 from ctypes import windll
 import pyglet
 import copy
-import Program
-import hupper
 
 root = tk.Tk()
 canvas = tk.Canvas(bg='#EBE4FA')
