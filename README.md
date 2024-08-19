@@ -8,7 +8,7 @@ The inputs, classes definition and main UI code are included in this repository.
 Source code:  [GitHub](https://github.com/nezuni1812/Logical-Agent-Wumpus-World)
 
 # Demo video:
-[![Video](https://img.youtube.com/vi/REPLACEME/maxresdefault.jpg)](https://youtu.be/REPLACEME)
+[![Video](https://img.youtube.com/vi/4KwkVteSj-M/maxresdefault.jpg)](https://youtu.be/4KwkVteSj-M)
 
 # Running the UI:
 All of our code are written in Python so a system with a relatively modern version of Python (>= 3.10) and PIP are required to run the program.

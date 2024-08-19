@@ -13,7 +13,7 @@ if __name__ == "__main__":
     # program = Program('map4.txt', 'result4.txt')
     # program = Program('map3.txt', 'result3.txt')
     # program = Program('map2.txt', 'result2.txt')
-    # program = Program('map1.txt', 'result1.txt')
+    program = Program('map1.txt', 'result1.txt')
     interface = Interface(program)
     agent = Agent(interface)
     
