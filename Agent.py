@@ -352,8 +352,8 @@ class Agent:
                 elif gas_safe:
                     safe_adj_cell.append((nx, ny))
                     self.KB.add_clause(Not(gas_symbol))
-                elif gas_danger == False and gas_safe == False and self.current_hp - 25 + self.heal_potions * 25 >= 75:
-                    safe_adj_cell.append((nx, ny))
+                # elif gas_danger == False and gas_safe == False and self.current_hp - 25 + self.heal_potions * 25 >= 50:
+                #     safe_adj_cell.append((nx, ny))
             
         return safe_adj_cell
     
@@ -398,8 +398,8 @@ class Agent:
                         path = self.a_star_path(self.current_position, closest_safe_cell, self.safe_cells)
                         if path:
                             for step in path[1:]:  # Skip the first step as it's the current position
-                                self.do_in_percept()
                                 self.move_to_adj_cell(step)
+                                self.do_in_percept()
                         else:
                             print("No valid path to the closest safe cell. Exploration complete.")
                             break
