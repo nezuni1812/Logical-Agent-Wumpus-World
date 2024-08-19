@@ -109,6 +109,15 @@ class Program:
 
         return percepts
 
+    def display_grid(self):
+        for row in self.grid:
+            formatted_row = []
+            for cell in row:
+                if cell:
+                    formatted_row.append(''.join(sorted(cell)))
+                else:
+                    formatted_row.append('-')
+            print(' '.join(formatted_row))
 
     def log_state(self, state):
         self.states_log.append(state)
