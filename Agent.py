@@ -352,10 +352,11 @@ class Agent:
                 elif gas_safe:
                     safe_adj_cell.append((nx, ny))
                     self.KB.add_clause(Not(gas_symbol))
-                elif gas_danger == False and gas_safe == False and self.current_hp - 25 - 25*gas_back + self.heal_potions*25 > 25:
+                elif gas_danger == False and gas_safe == False and self.current_hp - 25 - 25*gas_back + self.heal_potions*25 >= 25:
                     safe_adj_cell.append((nx, ny))
             
         return safe_adj_cell
+    
     
     def backtracking_search(self):
         while self.is_alive:
@@ -397,7 +398,7 @@ class Agent:
                     if closest_safe_cell:
                         path = self.a_star_path(self.current_position, closest_safe_cell, self.safe_cells)
                         if path:
-                            for step in path[1:]:  
+                            for step in path[1:]:  # Skip the first step as it's the current position
                                 self.do_in_percept()
                                 self.move_to_adj_cell(step)
                         else:
@@ -440,6 +441,7 @@ class Agent:
             self.do_in_percept()
             self.move_to_adj_cell(cell)
             self.explored_cells.add(cell)
+        self.do_in_percept()
             
         if self.current_position == (1, 1) and self.is_alive:
             state = [self.current_position, self.direction, 'CLIMB_OUT_OF_THE_CAVE', self.point, self.current_hp, self.heal_potions]
