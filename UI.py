@@ -17,6 +17,7 @@ pyglet.font.add_file('resource/FiraSansExtraCondensed-Bold.ttf')
 states_log = []
 grid_log = []
 grid = []
+visited_grid = []
 canvas_object_map = []
 ele_img_list = list[list[list]]
 ele_content_list: list[list[list]]
@@ -29,6 +30,7 @@ PADDING_LEFT = 75
 CELL_SIZE = 88.5 # pixels
 
 def init():
+    global grid
     root.geometry('1464x900+-4+50')
     root.configure(background='#EBE4FA')
     
@@ -39,6 +41,9 @@ def init():
     
     global ele_content_list
     global ele_img_list
+    global visited_grid
+    print('Grid size', len(grid), len(grid[0]))
+    visited_grid = [[False for j in range(len(grid[0]))] for i in range(len(grid))]
     ele_img_list = [[[] for j in range(len(grid[0]))] for i in range(len(grid))]
     ele_content_list = [[[] for j in range(len(grid[0]))] for i in range(len(grid))]
     
@@ -110,17 +115,23 @@ def draw_path():
     global agent_rotation
     print('Running...', len(states_log))
     
-    # if state_index <= 100:
+    if state_index >= len(states_log):
+        draw_text(heading='Game over!')
+        return
+    
     global ele_img_list
     for row in ele_img_list:
         canvas.delete(row)
     draw_layout()
+    draw_unvisited()
     
     if state_index != -1:
         state = states_log[state_index]
     else:
         if agent is None:
             agent = canvas.create_image(0*CELL_SIZE + PADDING_LEFT, 9*CELL_SIZE + PADDING_TOP, image=agent_img)
+        visited_grid[9][0] = True
+        draw_unvisited()
         root.update()
         return
         
@@ -129,7 +140,7 @@ def draw_path():
     after = state[1]
     action = state[2]
     
-    draw_text(step=f'{state_index}. {action.replace("_", " ")}', other=f'Before: {before}, After: {after}', more=f'HP: {state[3]}')
+    draw_text(step=f'{state_index}. {action.replace("_", " ")}', more=f'Point: {state[3]}, HP: {state[4]}, Heal Potions left: {state[5]}')
     
     if agent is None:
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
@@ -183,32 +194,32 @@ def draw_path():
             root.update()
             root.after(5)
             
+        visited_grid[before[0] + after[0]][before[1] + after[1]] = True
+        draw_unvisited()
         # canvas.delete(agent)
         # canvas.moveto(agent, after[0]*CELL_SIZE + PADDING_TOP, after[1]*CELL_SIZE + PADDING_LEFT)
     elif 'SHOOT' in action:
         canvas.delete(agent)
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
         destroy_wumpus(before[0], before[1], agent_rotation)
-        # while canvas.coords(agent)[0] != after[0]
-        # step = 15
-        # canvas.delete(agent)
-        # agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
-        
-        # moveY = after[0] * CELL_SIZE / step
-        # moveX = after[1] * CELL_SIZE / step
-        # print('Current:', canvas.coords(agent))
-        # print('Next:', after[0]*CELL_SIZE + PADDING_TOP, after[1]*CELL_SIZE + PADDING_LEFT)
-        # for s in range(step):
-        #     canvas.move(agent, moveX, moveY)
-        #     root.update()
-        #     root.after(20)
-        pass
+    elif 'GOLD' in action:
+        canvas.delete(agent)
+        agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
+        take_gold(before[0], before[1])
+    elif 'GRAB_HEALING_POTION' in action:
+        canvas.delete(agent)
+        agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
+        take_heal(before[0], before[1])
+    elif 'USE_HEALING_POTION' in action:
+        canvas.delete(agent)
+        agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
     elif 'SCREAM' in action:
         canvas.delete(agent)
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
     elif 'NOTHING' in action:
         canvas.delete(agent)
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
+    
         
     root.update()
     # root.after(1000)
@@ -232,37 +243,46 @@ def draw_text(heading = None, step = None, more = None, other = None):
             canvas.delete(text_list[3])
         text_list[3] = canvas.create_text(960, 110, text=other, anchor='nw', font=('Fira Sans Extra Condensed', 16))
     
-def is_close_to_wumpus(i, j):
+def is_close_to_wumpus(i, j, target):
     global grid
     for x in range(i-1, i+2):
         for y in range(j-1, j+2):
             if x >= 0 and x < len(grid) and y >= 0 and y < len(grid[0]) and (x == i or y == j):
-                if '1' in grid[x][y]:
+                if target in grid[x][y]:
                     return True
+    return False
+    
+def take_heal(row, col):
+    global grid
+    if '4' in grid[row][col]:
+        print('Remove healer at:', row, col)
+        grid[row][col] = grid[row][col].replace('4', '', 1)
+        for i in range(row-1, row+2):
+            for j in range(col-1, col+2):
+                if i >= 0 and i < len(grid) and j >= 0 and j < len(grid[0]):
+                    if '8' in grid[i][j] and not is_close_to_wumpus(i, j, '4'):
+                        grid[i][j] = grid[i][j].replace('8', '', 1)
+        return True
     return False
     
 def destroy_wumpus(row, col, degree):
     global grid
     if degree % 360 == 0:
-        draw_text(other='^')
         for i in range(row, -1, -1):
             if '1' in grid[i][col]:
                 row = i
                 break
     elif degree % 360 == 90:
-        draw_text(other='>')
         for i in range(col, len(grid[0])):
             if '1' in grid[row][i]:
                 col = i
                 break
     elif degree % 360 == 180:
-        draw_text(other='v')
         for i in range(row, len(grid)):
             if '1' in grid[i][col]:
                 row = i
                 break
     elif degree % 360 == 270:
-        draw_text(other='<')
         for i in range(col, -1, -1):
             if '1' in grid[row][i]:
                 col = i
@@ -274,10 +294,36 @@ def destroy_wumpus(row, col, degree):
         for i in range(row-1, row+2):
             for j in range(col-1, col+2):
                 if i >= 0 and i < len(grid) and j >= 0 and j < len(grid[0]):
-                    if '5' in grid[i][j] and not is_close_to_wumpus(i, j):
+                    if '5' in grid[i][j] and not is_close_to_wumpus(i, j, '1'):
                         grid[i][j] = grid[i][j].replace('5', '', 1)
         return True
     return False
+
+def take_gold(row, col):
+    global grid
+    if '9' in grid[row][col]:
+        print('Remove gold at:', row, col)
+        grid[row][col] = grid[row][col].replace('9', '', 1)
+        for i in range(row-1, row+2):
+            for j in range(col-1, col+2):
+                if i >= 0 and i < len(grid) and j >= 0 and j < len(grid[0]):
+                    if '9' in grid[i][j] and not is_close_to_wumpus(i, j):
+                        grid[i][j] = grid[i][j].replace('9', '', 1)
+    pass
+    
+unvisited_img = img = ImageTk.PhotoImage(Image.open("resource/blur.png").resize((78, 78)))
+unvisited_block = []
+
+def draw_unvisited():
+    global visited_grid
+    for i in unvisited_block:
+        canvas.delete(i)
+        
+    for i in range(len(visited_grid)):
+        for j in range(len(visited_grid[0])):
+            if not visited_grid[i][j]:
+                unvisited_block.append(canvas.create_image(j*CELL_SIZE + PADDING_LEFT - 2, i*CELL_SIZE + PADDING_TOP - 2, image=unvisited_img, anchor='center'))
+    
     
 def draw_layout():
     global ele_content_list
