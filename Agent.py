@@ -352,8 +352,8 @@ class Agent:
                 elif gas_safe:
                     safe_adj_cell.append((nx, ny))
                     self.KB.add_clause(Not(gas_symbol))
-                # elif gas_danger == False and gas_safe == False and self.current_hp - 25 + self.heal_potions*25 >= 25:
-                #     safe_adj_cell.append((nx, ny))
+                elif gas_danger == False and gas_safe == False and self.current_hp - 25 + self.heal_potions * 25 >= 75:
+                    safe_adj_cell.append((nx, ny))
             
         return safe_adj_cell
     
@@ -600,6 +600,9 @@ class Agent:
                 if neighbor in safe_cells or neighbor in should_not_go_cells:
                     move_cost_value, new_direction = self.move_cost(current, neighbor, current_direction)
                     tentative_g_score = g_score[(current, current_direction)] + move_cost_value
+                    
+                    if neighbor in should_not_go_cells:
+                        tentative_g_score += 999  # penalty for "should not go" cells
 
                     if (neighbor, new_direction) not in g_score or tentative_g_score < g_score[(neighbor, new_direction)]:
                         came_from[(neighbor, new_direction)] = (current, current_direction)
