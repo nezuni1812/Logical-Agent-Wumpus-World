@@ -1,0 +1,11 @@
+10
+P_G.P_G.P_G.H_P.P_G.P_G.P_G.P_G.P_G.P_G
+P_G.P_G.P_G.P_G.P_G.P_G.P_G.P_G.P_G.P_G
+P_G.P_G.W,C.P_G.P_G.P_G.P_G.P.P_G.P_G
+P_G.P_G.P_G.P_G.P_G.P_G.P_G.P_G.P_G.P_G
+P_G.P_G.P_G.P_G.P_G.P_G.P_G.P_G.P_G.P_G
+P_G.P_G.P_G.P_G.P_G.P_G.P_G.P_G.P_G.P_G
+P_G.P_G.P_G.P_G.P_G.P_G.P_G.P_G.P_G.P_G
+P_G.W.P_G.P_G.P_G.P_G.C.P_G.W,C.P_G
+P_G,C.P_G,C.P_G.P_G.P_G.P_G.P_G.P_G.P_G.P_G
+-.P_G,C.P_G.P_G.P_G.P_G,C.P_G.P_G.P_G.P_G

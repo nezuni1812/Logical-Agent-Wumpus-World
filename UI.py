@@ -51,7 +51,14 @@ def init():
     draw_layout()
     # draw_path()
     global state_index
+    global agent_rotation
+    global is_autoplay
+    is_autoplay = False
     root.bind("<Right>", lambda *args: next())
+    root.bind("<Return>", lambda *args: init())
+    root.bind("<space>", lambda *args: autoplay(True))
+    state_index = -1
+    agent_rotation = 0
     draw_text('Hell world')
     draw_path()
     # root.bind("<Left>", lambda *args: prev())
@@ -103,6 +110,25 @@ def prev():
     state_index -= 1
     draw_path()
     
+is_autoplay = False
+def autoplay(toggle=False):
+    global is_autoplay
+    global state_index
+    global states_log
+    if toggle:
+        print('Autoplay toggled', not is_autoplay)
+        is_autoplay = not is_autoplay
+    
+    if state_index >= len(states_log):
+        return
+    
+    if not is_autoplay:
+        return
+    
+    state_index += 1
+    draw_path()
+    root.after(100, lambda: autoplay())
+    
 agent_img_src = Image.open("resource/agent.png").resize((76, 76))
 agent_img = ImageTk.PhotoImage(agent_img_src)
 agent = None
@@ -128,8 +154,10 @@ def draw_path():
     if state_index != -1:
         state = states_log[state_index]
     else:
-        if agent is None:
-            agent = canvas.create_image(0*CELL_SIZE + PADDING_LEFT, 9*CELL_SIZE + PADDING_TOP, image=agent_img)
+        # if agent is None:
+        agent_img = ImageTk.PhotoImage(agent_img_src.rotate(-agent_rotation))
+        canvas.delete(agent)
+        agent = canvas.create_image(0*CELL_SIZE + PADDING_LEFT, 9*CELL_SIZE + PADDING_TOP, image=agent_img)
         visited_grid[9][0] = True
         draw_unvisited()
         root.update()
@@ -304,11 +332,11 @@ def take_gold(row, col):
     if '9' in grid[row][col]:
         print('Remove gold at:', row, col)
         grid[row][col] = grid[row][col].replace('9', '', 1)
-        for i in range(row-1, row+2):
-            for j in range(col-1, col+2):
-                if i >= 0 and i < len(grid) and j >= 0 and j < len(grid[0]):
-                    if '9' in grid[i][j] and not is_close_to_wumpus(i, j):
-                        grid[i][j] = grid[i][j].replace('9', '', 1)
+        # for i in range(row-1, row+2):
+        #     for j in range(col-1, col+2):
+        #         if i >= 0 and i < len(grid) and j >= 0 and j < len(grid[0]):
+        #             if '9' in grid[i][j] and not is_close_to_wumpus(i, j, ):
+        #                 grid[i][j] = grid[i][j].replace('9', '', 1)
     pass
     
 unvisited_img = img = ImageTk.PhotoImage(Image.open("resource/blur.png").resize((78, 78)))
