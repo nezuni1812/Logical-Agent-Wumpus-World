@@ -33,7 +33,7 @@ class Interface:
         return None
 
     def log_state(self, state):
-        # print(state)
+        print(state)
         state_str = (f"Position: {state[State.POSITION.value]} "
                     f"Direction: {state[State.DIRECTION.value]} "
                     f"Action: {state[State.EVENT.value]} "
