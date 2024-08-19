@@ -13,7 +13,7 @@ canvas = tk.Canvas(bg='#EBE4FA')
 # Make text sharper
 windll.shcore.SetProcessDpiAwareness(1)
 # Add font file
-pyglet.font.add_file('resource/FiraSansExtraCondensed-Bold.ttf')
+pyglet.font.add_file('FiraSansExtraCondensed-Bold.ttf')
 
 states_log = []
 grid_log = []
