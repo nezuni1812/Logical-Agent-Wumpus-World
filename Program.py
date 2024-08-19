@@ -44,7 +44,7 @@ class Program:
             '1': '5',  # Wumpus -> Stench
             '2': '6',  # Pits -> Breeze
             '3': '7',  # Poisonous Gas -> Whiff
-            '4': '8'   # Healing Potion -> Glitter
+            '4': '8'   # Healing Potion -> Glow
         }
 
         for x in range(self.grid_size):
@@ -109,15 +109,6 @@ class Program:
 
         return percepts
 
-    def display_grid(self):
-        for row in self.grid:
-            formatted_row = []
-            for cell in row:
-                if cell:
-                    formatted_row.append(''.join(sorted(cell)))
-                else:
-                    formatted_row.append('-')
-            print(' '.join(formatted_row))
 
     def log_state(self, state):
         self.states_log.append(state)
@@ -155,9 +146,3 @@ class Program:
                         self.grid[direct_cell_x][direct_cell_y] = '-'
                     self.delete_percepts(direct_cell_x, direct_cell_y, '5')
                     self.generate_percepts()
-
-if __name__ == "__main__":
-    program = Program('map1.txt', 'outpu2.txt')
-    x, y = 0, 0
-    print(program.get_cell_info(x, y))
-    program.display_grid()
