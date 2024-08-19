@@ -337,7 +337,7 @@ class Agent:
             return adj_cell
         
         safe_adj_cell = []
-
+        Path, gas_back = self.a_star_minimize_should_not_go(self.current_position, (1, 1), self.explored_cells - self.gas_not_explored, self.gas_not_explored)
         for nx, ny in adj_cell:
             if (nx, ny) in self.safe_cells:
                 safe_adj_cell.append((nx, ny))
@@ -352,10 +352,11 @@ class Agent:
                 elif gas_safe:
                     safe_adj_cell.append((nx, ny))
                     self.KB.add_clause(Not(gas_symbol))
-                # elif gas_danger == False and gas_safe == False and self.current_hp - 25 + self.heal_potions*25 >= 25:
-                #     safe_adj_cell.append((nx, ny))
+                elif gas_danger == False and gas_safe == False and self.current_hp - 25 - 25*gas_back + self.heal_potions*25 >= 25:
+                    safe_adj_cell.append((nx, ny))
             
         return safe_adj_cell
+    
     
     def backtracking_search(self):
         while self.is_alive:
@@ -412,6 +413,7 @@ class Agent:
                 break
         
         print("Current cell: " + str(self.current_position) + " Total cells pass: " + str(len(self.explored_cells)))
+        
         self.gas_passed = set(self.gas_not_explored)
         while len(self.gas_passed) > 0:
             gas_cell = self.find_closest_cell(list(self.gas_passed))
@@ -600,7 +602,8 @@ class Agent:
                 if neighbor in safe_cells or neighbor in should_not_go_cells:
                     move_cost_value, new_direction = self.move_cost(current, neighbor, current_direction)
                     tentative_g_score = g_score[(current, current_direction)] + move_cost_value
-
+                    if neighbor in should_not_go_cells:
+                        tentative_g_score += 999  # penalty for "should not go" cells
                     if (neighbor, new_direction) not in g_score or tentative_g_score < g_score[(neighbor, new_direction)]:
                         came_from[(neighbor, new_direction)] = (current, current_direction)
                         g_score[(neighbor, new_direction)] = tentative_g_score
