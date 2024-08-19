@@ -5,12 +5,12 @@ import UI
 import copy
 
 if __name__ == "__main__":
-    program = Program('map2.txt', 'result1.txt')
+    program = Program('map1.txt', 'result1.txt')
     interface = Interface(program)
     agent = Agent(interface)
     
     program.display_grid()
-    UI.grid = copy.deepcopy(program.grid)
+    UI.load_map(copy.deepcopy(program.grid))
     agent.backtracking_search()
     
     print('State log size:', len(program.states_log))

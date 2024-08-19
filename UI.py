@@ -4,6 +4,7 @@ from PIL import Image, ImageTk
 from tkinter import ttk
 from ctypes import windll
 import pyglet
+import copy
 import Program
 import hupper
 
@@ -17,6 +18,7 @@ pyglet.font.add_file('resource/FiraSansExtraCondensed-Bold.ttf')
 states_log = []
 grid_log = []
 grid = []
+original_grid = []
 visited_grid = []
 canvas_object_map = []
 ele_img_list = list[list[list]]
@@ -30,7 +32,6 @@ PADDING_LEFT = 75
 CELL_SIZE = 88.5 # pixels
 
 def init():
-    global grid
     root.geometry('1464x900+-4+50')
     root.configure(background='#EBE4FA')
     
@@ -42,6 +43,9 @@ def init():
     global ele_content_list
     global ele_img_list
     global visited_grid
+    global original_grid
+    global grid
+    grid = copy.deepcopy(original_grid)
     print('Grid size', len(grid), len(grid[0]))
     visited_grid = [[False for j in range(len(grid[0]))] for i in range(len(grid))]
     ele_img_list = [[[] for j in range(len(grid[0]))] for i in range(len(grid))]
@@ -63,35 +67,10 @@ def init():
     draw_path()
     root.mainloop()
     
-def load_map(input_file):
-    with open(input_file, 'r') as file:
-        grid_size = int(file.readline().strip())
-        grid = [line.strip().split('.') for line in file.readlines()]
-        for x in range(grid_size):
-            for y in range(len(grid[x])):
-                cell_content = grid[x][y]
-                if cell_content != '-':
-                    objects = cell_content.split(',')
-                    percept_numbers = []
-                    
-                    # Check and add percepts for each object occurrence
-                    for obj in objects:
-                        if obj == 'W':
-                            percept_numbers.append('1')  # Wumpus
-                        elif obj == 'P_G':
-                            percept_numbers.append('3')  # Poisonous Gas
-                        elif obj == 'P':
-                            percept_numbers.append('2')  # Pit
-                        elif obj == 'H_P':
-                            percept_numbers.append('4')  # Healing Potion
-                        elif obj == 'C':
-                            percept_numbers.append('9')  # Chess of gold
-                        
-                    # Combine percepts into a string
-                    grid[x][y] = ''.join(sorted(percept_numbers))
-                else:
-                    grid[x][y] = ''
-        print(grid)
+def load_map(input_grid):
+    global grid
+    global original_grid
+    original_grid = grid = input_grid
     
     
 def next():
@@ -155,16 +134,19 @@ def draw_path():
         root.update()
         return
         
+    # Print current state to the terminal
     print('Current state:', state)
     before = state[0]
     after = state[1]
     action = state[2]
     
+    # Update the texts based on the state
     draw_text(step=f'{state_index}. {action.replace("_", " ")}', more=f'Point: {state[3]}, HP: {state[4]}, Heal Potions left: {state[5]}')
     
     if agent is None:
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
     
+    # Draw the agent based on the action
     if 'RIGHT' in action:
         # print('Right')
         degree = 0
@@ -258,7 +240,7 @@ def draw_status(row, col, content):
     root.update()
     
 text_list = [None, None, None, None]
-def draw_text(heading = None, step = None, more = None, other = None):
+def draw_text(heading = None, step = None, more = None, other = None, instruction = '<Arrow ▶> for next move\n<Space ␣> for autoplay\n<Enter ↵> for restarting'):
     if heading is not None:
         if text_list[0] is not None:
             canvas.delete(text_list[0])
@@ -275,8 +257,12 @@ def draw_text(heading = None, step = None, more = None, other = None):
         if text_list[3] is not None:
             canvas.delete(text_list[3])
         text_list[3] = canvas.create_text(960, 110, text=other, anchor='nw', font=('Fira Sans Extra Condensed', 16))
+    if instruction is not None:
+        if text_list[3] is not None:
+            canvas.delete(text_list[3])
+        text_list[3] = canvas.create_text(960, 140, text=instruction, anchor='nw', font=('Fira Sans Extra Condensed', 16))
     
-def is_close_to_wumpus(i, j, target):
+def is_close_to_target(i, j, target):
     global grid
     for x in range(i-1, i+2):
         for y in range(j-1, j+2):
@@ -293,7 +279,7 @@ def take_heal(row, col):
         for i in range(row-1, row+2):
             for j in range(col-1, col+2):
                 if i >= 0 and i < len(grid) and j >= 0 and j < len(grid[0]):
-                    if '8' in grid[i][j] and not is_close_to_wumpus(i, j, '4'):
+                    if '8' in grid[i][j] and not is_close_to_target(i, j, '4'):
                         grid[i][j] = grid[i][j].replace('8', '', 1)
         return True
     return False
@@ -327,7 +313,7 @@ def destroy_wumpus(row, col, degree):
         for i in range(row-1, row+2):
             for j in range(col-1, col+2):
                 if i >= 0 and i < len(grid) and j >= 0 and j < len(grid[0]):
-                    if '5' in grid[i][j] and not is_close_to_wumpus(i, j, '1'):
+                    if '5' in grid[i][j] and not is_close_to_target(i, j, '1'):
                         grid[i][j] = grid[i][j].replace('5', '', 1)
         return True
     return False
@@ -337,14 +323,8 @@ def take_gold(row, col):
     if '9' in grid[row][col]:
         # print('Remove gold at:', row, col)
         grid[row][col] = grid[row][col].replace('9', '', 1)
-        # for i in range(row-1, row+2):
-        #     for j in range(col-1, col+2):
-        #         if i >= 0 and i < len(grid) and j >= 0 and j < len(grid[0]):
-        #             if '9' in grid[i][j] and not is_close_to_wumpus(i, j, ):
-        #                 grid[i][j] = grid[i][j].replace('9', '', 1)
-    pass
     
-unvisited_img = img = ImageTk.PhotoImage(Image.open("resource/blur.png").resize((78, 78)))
+unvisited_img = img = ImageTk.PhotoImage(Image.open("resource/blur.png").resize((79, 79)))
 unvisited_block = []
 
 def draw_unvisited():
@@ -363,15 +343,9 @@ def draw_layout():
     global state_index
     global ele_img_list
     
-    # ele_content_list[:][:].clear()
     ele_content_list = [[[] for j in range(len(grid[0]))] for i in range(len(grid))]
     current_grid = []
     current_grid = grid
-    # print(len(ele_content_list), len(ele_content_list[0]))
-    # return
-    # print("Current layout")
-    # for row in current_grid:
-    #     print(row)
         
     for i, row in enumerate(current_grid):
         for j, cell in enumerate(row):
@@ -382,23 +356,14 @@ def draw_layout():
                 per_size = 96
                 if cell_content[0] == '4':
                     ele_content_list[i][j].append('Healer')
-                    # print(ele_content_list)
-                    # print('-----------')
-                    # tet = canvas.create_text(j*CELL_SIZE + PADDING_LEFT, i*CELL_SIZE + PADDING_TOP, text='Healer', fill='#00ff75')
-                    # ele_img_list[i][j].append(tet)
-                    # img = ImageTk.PhotoImage(Image.open("resource/heal.png").resize((46, 46)))
                 elif cell_content[0] == '1':
                     ele_content_list[i][j].append('Wumpus')
-                    # img = ImageTk.PhotoImage(Image.open("resource/wumpus.png").resize((46, 46)))
                 elif cell_content[0] == '2':
                     ele_content_list[i][j].append('Pit')
-                    # img = ImageTk.PhotoImage(Image.open("resource/pit.png").resize((46, 46)))
                 elif cell_content[0] == '3':
                     ele_content_list[i][j].append('Poison')
-                    # img = ImageTk.PhotoImage(Image.open("resource/poison.png").resize((46, 46)))
                 elif cell_content[0] == '9':
                     ele_content_list[i][j].append('Gold')
-                    # img = ImageTk.PhotoImage(Image.open("resource/gold.png").resize((46, 46)))
                 # Percepts
                 elif cell_content[0] == '5':
                     img = ImageTk.PhotoImage(Image.open("resource/stench.png").resize((per_size, per_size)))
@@ -416,9 +381,6 @@ def draw_layout():
                 
                 cell_content = cell_content[1:len(cell_content)]
                 
-            # print('ele content list:', ele_content_list)
-            # if len(ele_content_list[i][j]) <= 0:
-            #     continue
             wumpus_count = ele_content_list[i][j].count('Wumpus')
             text_height = 16
             content = set(ele_content_list[i][j])
@@ -439,10 +401,6 @@ def draw_layout():
                     item = item + ' ' + str(wumpus_count) + 'x'
                 
                 ele_img_list.append(canvas.create_text(j*CELL_SIZE + PADDING_LEFT/2.3, i*CELL_SIZE + PADDING_TOP - (text_height * len(content)/2) + id*text_height + 6, text=item, font=('Fira Sans Extra Condensed Bold', 14, 'bold'), anchor='w', fill=text_color))
-                # bbox = canvas.bbox(ele_img_list[i][j][-1])
-                # rect_item = canvas.create_rectangle(bbox, outline="white", fill="white")
-            # print('End of cell')
-            # return
 
     
     
