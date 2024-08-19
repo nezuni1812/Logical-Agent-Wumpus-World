@@ -61,12 +61,6 @@ def init():
     agent_rotation = 0
     draw_text('Hell world')
     draw_path()
-    # root.bind("<Left>", lambda *args: prev())
-    # wum_img = ImageTk.PhotoImage(Image.open("resource/wumpus.png"))
-    # wum = canvas.create_image(0, 0, image=wum_img, anchor='center')
-    
-    # canvas.pack()
-    # root.update()
     root.mainloop()
     
 def load_map(input_file):
@@ -139,7 +133,6 @@ def draw_path():
     global state_index
     global agent
     global agent_rotation
-    print('Running...', len(states_log))
     
     if state_index >= len(states_log):
         draw_text(heading='Game over!')
@@ -154,7 +147,6 @@ def draw_path():
     if state_index != -1:
         state = states_log[state_index]
     else:
-        # if agent is None:
         agent_img = ImageTk.PhotoImage(agent_img_src.rotate(-agent_rotation))
         canvas.delete(agent)
         agent = canvas.create_image(0*CELL_SIZE + PADDING_LEFT, 9*CELL_SIZE + PADDING_TOP, image=agent_img)
@@ -163,7 +155,7 @@ def draw_path():
         root.update()
         return
         
-    print(state)
+    print('Current state:', state)
     before = state[0]
     after = state[1]
     action = state[2]
@@ -174,12 +166,12 @@ def draw_path():
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
     
     if 'RIGHT' in action:
-        print('Right')
+        # print('Right')
         degree = 0
         while degree <= 90:
             canvas.delete(agent)
             agent_img = ImageTk.PhotoImage(agent_img_src.rotate(-agent_rotation - degree))
-            print('Right', degree)
+            # print('Right', degree)
             agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
             degree += 10
             root.update()
@@ -187,12 +179,12 @@ def draw_path():
             
         canvas.delete(agent)
         agent_rotation += 90
-        print(agent_rotation)
+        # print(agent_rotation)
         agent_img = ImageTk.PhotoImage(agent_img_src.rotate(-agent_rotation))
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
         
     elif 'LEFT' in action:
-        print('Left')
+        # print('Left')
         degree = 0
         while degree <= 90:
             canvas.delete(agent)
@@ -215,8 +207,8 @@ def draw_path():
         
         moveY = after[0] * CELL_SIZE / step
         moveX = after[1] * CELL_SIZE / step
-        print('Current:', canvas.coords(agent))
-        print('Next:', after[0]*CELL_SIZE + PADDING_TOP, after[1]*CELL_SIZE + PADDING_LEFT)
+        # print('Current:', canvas.coords(agent))
+        # print('Next:', after[0]*CELL_SIZE + PADDING_TOP, after[1]*CELL_SIZE + PADDING_LEFT)
         for s in range(step):
             canvas.move(agent, moveX, moveY)
             root.update()
@@ -229,6 +221,7 @@ def draw_path():
     elif 'SHOOT' in action:
         canvas.delete(agent)
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
+        draw_status(before[0], before[1], '🔫')
         destroy_wumpus(before[0], before[1], agent_rotation)
     elif 'GOLD' in action:
         canvas.delete(agent)
@@ -241,16 +234,28 @@ def draw_path():
     elif 'USE_HEALING_POTION' in action:
         canvas.delete(agent)
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
+        draw_status(before[0], before[1], '✨')
     elif 'SCREAM' in action:
         canvas.delete(agent)
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
+        draw_status(before[0], before[1], '❗')
     elif 'NOTHING' in action:
         canvas.delete(agent)
         agent = canvas.create_image(before[1]*CELL_SIZE + PADDING_LEFT, before[0]*CELL_SIZE + PADDING_TOP, image=agent_img)
+        draw_status(before[0], before[1], '✅')
     
         
     root.update()
     # root.after(1000)
+    
+text_status = None
+def draw_status(row, col, content):
+    global text_status
+    if text_status is not None:
+        canvas.delete(text_status)
+    text_status = canvas.create_text(col*CELL_SIZE + 1.4*PADDING_LEFT, row*CELL_SIZE + PADDING_TOP - 20, text=content, font=('Fira Sans Extra Condensed Bold', 18, 'bold'))
+    ele_img_list.append(text_status)
+    root.update()
     
 text_list = [None, None, None, None]
 def draw_text(heading = None, step = None, more = None, other = None):
@@ -283,7 +288,7 @@ def is_close_to_wumpus(i, j, target):
 def take_heal(row, col):
     global grid
     if '4' in grid[row][col]:
-        print('Remove healer at:', row, col)
+        # print('Remove healer at:', row, col)
         grid[row][col] = grid[row][col].replace('4', '', 1)
         for i in range(row-1, row+2):
             for j in range(col-1, col+2):
@@ -317,7 +322,7 @@ def destroy_wumpus(row, col, degree):
                 break
         
     if '1' in grid[row][col]:
-        print('Remove wumpus at:', row, col)
+        # print('Remove wumpus at:', row, col)
         grid[row][col] = grid[row][col].replace('1', '', 1)
         for i in range(row-1, row+2):
             for j in range(col-1, col+2):
@@ -330,7 +335,7 @@ def destroy_wumpus(row, col, degree):
 def take_gold(row, col):
     global grid
     if '9' in grid[row][col]:
-        print('Remove gold at:', row, col)
+        # print('Remove gold at:', row, col)
         grid[row][col] = grid[row][col].replace('9', '', 1)
         # for i in range(row-1, row+2):
         #     for j in range(col-1, col+2):
@@ -364,9 +369,9 @@ def draw_layout():
     current_grid = grid
     # print(len(ele_content_list), len(ele_content_list[0]))
     # return
-    print("Current layout")
-    for row in current_grid:
-        print(row)
+    # print("Current layout")
+    # for row in current_grid:
+    #     print(row)
         
     for i, row in enumerate(current_grid):
         for j, cell in enumerate(row):
