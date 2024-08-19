@@ -18,23 +18,23 @@ class Program:
                     cell_content = self.grid[x][y]
                     if cell_content != '-':
                         objects = cell_content.split(',')
-                        percept_numbers = []
+                        object_nums = []
                         
                         # Check and add percepts for each object occurrence
                         for obj in objects:
                             if obj == 'W':
-                                percept_numbers.append('1')  # Wumpus
+                                object_nums.append('1')  # Wumpus
                             elif obj == 'P_G':
-                                percept_numbers.append('3')  # Poisonous Gas
+                                object_nums.append('3')  # Poisonous Gas
                             elif obj == 'P':
-                                percept_numbers.append('2')  # Pit
+                                object_nums.append('2')  # Pit
                             elif obj == 'H_P':
-                                percept_numbers.append('4')  # Healing Potion
+                                object_nums.append('4')  # Healing Potion
                             elif obj == 'C':
-                                percept_numbers.append('9')  # Chess of gold
+                                object_nums.append('9')  # Chess of gold
                             
                         # Combine percepts into a string
-                        self.grid[x][y] = ''.join(sorted(percept_numbers))
+                        self.grid[x][y] = ''.join(sorted(object_nums))
                     else:
                         self.grid[x][y] = ''
 
