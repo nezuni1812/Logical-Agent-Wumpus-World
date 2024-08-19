@@ -22,7 +22,29 @@ The working director MUST be the one contains all input files, font file and ima
 ```bash
 cd Source
 ```
-
+So our working directory will have:
+```
+Source (we are in here)
+│   main.py
+│   CascadiaCode.ttf
+│   map1.txt
+│   ...
+│   map6.txt
+│   result1.txt
+│   ...
+│   result6.txt
+│   README.txt
+│   Interface.py
+│   Agent.py
+│   Program.py
+│   KnowledgeBase.py
+│   requirements.txt
+│   ...
+│   
+└───resource
+        agent.png
+        ...
+```
 Then we run the program with Python.
 ```bash
 python main.py
